@@ -15,6 +15,6 @@ template:
           lista: >-
             {% set novo = [{'q': trigger.event.data.q, 't': trigger.event.data.tipo, 'dur': trigger.event.data.dur,
                'hi': trigger.event.data.hi, 'wh': trigger.event.data.wh, 'pmax': trigger.event.data.pmax,
-               'idle': trigger.event.data.idle, 'act': trigger.event.data.act, 'tr': trigger.event.data.tr,
+               'idle': trigger.event.data.idle, 'act': trigger.event.data.act, 'b': trigger.event.data.bomba, 'tr': trigger.event.data.tr,
                'seq': trigger.event.data.seq}] %}
             {{ [] if trigger.event.data.reset is defined else (novo + (this.attributes.lista | default([])))[:15] }}
