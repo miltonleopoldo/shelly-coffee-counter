@@ -51,9 +51,12 @@ Uma tomada Tuya (cloud) foi ainda pior: uma leitura a cada ~35 s, e falhou um lu
 | `packages/cafe.yaml` | Pacote principal: helpers, contadores, utility meters, stock, depósitos, avisos e a automação do webhook |
 | `packages/cafe_shelly_m.yaml` | Sensor com as últimas 15 bebidas medidas pela tomada (para conferir a classificação) |
 | `dashboard/vista-cafe.yaml` | A vista "Café" do dashboard (layout sections) |
+| `docs/` | Guia de instalação em português e inglês (Markdown e Word) |
 | `images/` | Capturas e diagramas |
 
 ## Instalação
+
+O guia completo, passo a passo, da configuração da tomada ao dashboard e aos problemas comuns, está em **[docs/INSTALL.pt.md](docs/INSTALL.pt.md)** (também em [Word](docs/Guia-de-instalacao-PT.docx)). Em resumo:
 
 1. **Pacotes.** Copia `packages/*.yaml` para `/config/packages/` e confirma que o `configuration.yaml` tem:
    ```yaml

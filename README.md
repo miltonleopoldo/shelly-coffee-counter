@@ -51,9 +51,12 @@ A Tuya cloud plug was even worse (one reading every ~35 s; it missed a whole lun
 | `packages/cafe.yaml` | Main HA package: helpers, counters, utility meters, stock, tanks, alerts and the webhook automation |
 | `packages/cafe_shelly_m.yaml` | Template sensor with the last 15 drinks measured by the plug (for checking the classification) |
 | `dashboard/vista-cafe.yaml` | The "Café" dashboard view (sections layout) |
+| `docs/` | Installation guide in English and Portuguese (Markdown and Word) |
 | `images/` | Screenshots and diagrams |
 
 ## Installation
+
+A full step-by-step guide, from setting up the plug to the dashboard and troubleshooting, is in **[docs/INSTALL.md](docs/INSTALL.md)** (also as [Word](docs/Installation-guide-EN.docx)). The short version:
 
 1. **Packages.** Copy `packages/*.yaml` to `/config/packages/` and make sure your `configuration.yaml` has:
    ```yaml
