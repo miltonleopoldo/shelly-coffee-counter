@@ -1619,7 +1619,7 @@ sections:
           borderColor: '#f0c987'
           strokeDashArray: 4
           label:
-            text: conta como bebida acima de 800 W
+            text: conta como bebida acima de 600 W
             style:
               color: '#3e2723'
               background: '#f0c987'

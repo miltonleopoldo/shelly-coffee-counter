@@ -51,6 +51,7 @@ Uma tomada Tuya (cloud) foi ainda pior: uma leitura a cada ~35 s, e falhou um lu
 | `packages/cafe.yaml` | Pacote principal: helpers, contadores, utility meters, stock, depósitos, avisos e a automação do webhook |
 | `packages/cafe_shelly_m.yaml` | Sensor com as últimas 15 bebidas medidas pela tomada (para conferir a classificação) |
 | `dashboard/vista-cafe.yaml` | A vista "Café" do dashboard (layout sections) |
+| `dashboard/coffee-view.yaml` | A mesma vista em inglês |
 | `docs/` | Guia de instalação em português e inglês (Markdown e Word) |
 | `images/` | Capturas e diagramas |
 
@@ -70,7 +71,7 @@ O guia completo, passo a passo, da configuração da tomada ao dashboard e aos p
 3. **Reinicia o Home Assistant** (os counters não têm reload; da primeira vez é preciso reiniciar).
 4. **Script da Shelly.** Na página da tomada vai a *Scripts → Create script*, cola o `shelly/contador_cafe.js`, põe em `URL` o endereço `http://<IP_DO_TEU_HA>:8123/api/webhook/<O_TEU_WEBHOOK_ID>`, grava, arranca o script e ativa o arranque automático.
 5. **Testa.** Abre `http://<IP_DA_TOMADA>/script/1/teste`; deve aparecer no HA uma notificação "Teste recebido…".
-6. **Dashboard (opcional).** Instala o [button-card](https://github.com/custom-cards/button-card) e o [apexcharts-card](https://github.com/RomRider/apexcharts-card) pelo HACS e cola o `dashboard/vista-cafe.yaml` como vista nova no editor de configuração em texto do dashboard. Os três cartões `custom:jarvis-popup-card` são um cartão pessoal que não está publicado; apaga-os ou troca-os pelos teus popups.
+6. **Dashboard (opcional).** Instala o [button-card](https://github.com/custom-cards/button-card) e o [apexcharts-card](https://github.com/RomRider/apexcharts-card) pelo HACS e cola o `dashboard/vista-cafe.yaml` (ou o `dashboard/coffee-view.yaml`, em inglês) como vista nova no editor de configuração em texto do dashboard. Os três cartões `custom:jarvis-popup-card` são um cartão pessoal que não está publicado; apaga-os ou troca-os pelos teus popups.
 
 ## Testado com
 

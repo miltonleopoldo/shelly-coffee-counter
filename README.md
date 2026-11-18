@@ -50,7 +50,8 @@ A Tuya cloud plug was even worse (one reading every ~35 s; it missed a whole lun
 | `shelly/contador_cafe.js` | mJS script for the Shelly Plug M Gen3 |
 | `packages/cafe.yaml` | Main HA package: helpers, counters, utility meters, stock, tanks, alerts and the webhook automation |
 | `packages/cafe_shelly_m.yaml` | Template sensor with the last 15 drinks measured by the plug (for checking the classification) |
-| `dashboard/vista-cafe.yaml` | The "Café" dashboard view (sections layout) |
+| `dashboard/coffee-view.yaml` | The "Coffee" dashboard view in English (sections layout) |
+| `dashboard/vista-cafe.yaml` | The same view in Portuguese |
 | `docs/` | Installation guide in English and Portuguese (Markdown and Word) |
 | `images/` | Screenshots and diagrams |
 
@@ -70,9 +71,9 @@ A full step-by-step guide, from setting up the plug to the dashboard and trouble
 3. **Restart Home Assistant** (counters do not reload; a restart is needed the first time).
 4. **Shelly script.** On the plug's web page go to *Scripts → Create script*, paste `shelly/contador_cafe.js`, set `URL` to `http://<YOUR_HA_IP>:8123/api/webhook/<YOUR_WEBHOOK_ID>`, save, start it and enable *Run on startup*.
 5. **Test.** Open `http://<PLUG_IP>/script/1/teste`; a persistent notification "Teste recebido…" should appear in HA.
-6. **Dashboard (optional).** Install [button-card](https://github.com/custom-cards/button-card) and [apexcharts-card](https://github.com/RomRider/apexcharts-card) from HACS, then paste `dashboard/vista-cafe.yaml` as a new view in the dashboard's raw configuration editor. The three `custom:jarvis-popup-card` cards are a personal card that is not published; remove them or replace them with your own popups.
+6. **Dashboard (optional).** Install [button-card](https://github.com/custom-cards/button-card) and [apexcharts-card](https://github.com/RomRider/apexcharts-card) from HACS, then paste `dashboard/coffee-view.yaml` (English) or `dashboard/vista-cafe.yaml` (Portuguese) as a new view in the dashboard's raw configuration editor. The three `custom:jarvis-popup-card` cards are a personal card that is not published; remove them or replace them with your own popups.
 
-> Entity names, labels and the dashboard are in Portuguese. The logic does not depend on them, so feel free to rename.
+> Entity names are in Portuguese; the dashboard comes in English and Portuguese. The logic does not depend on the names, so feel free to rename.
 
 ## Tested with
 

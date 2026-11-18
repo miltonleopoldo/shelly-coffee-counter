@@ -2,7 +2,7 @@
 
 Nov 18, 2026 · @Milton
 
-This guide takes you from a plug still in its box to a Coffee dashboard counting drinks, in about 30 minutes. All files are in the [miltonleopoldo/shelly-coffee-counter](https://github.com/miltonleopoldo/shelly-coffee-counter) repository. Entity names and dashboard labels are in Portuguese; the logic does not depend on them.
+This guide takes you from a plug still in its box to a Coffee dashboard counting drinks, in about 30 minutes. All files are in the [miltonleopoldo/shelly-coffee-counter](https://github.com/miltonleopoldo/shelly-coffee-counter) repository. Entity names are in Portuguese; the logic does not depend on them. The dashboard comes in English and in Portuguese.
 
 ## What you need
 
@@ -15,7 +15,7 @@ This guide takes you from a plug still in its box to a Coffee dashboard counting
 | HACS with button-card and apexcharts-card | Dashboard only | Optional |
 | `packages/cafe.yaml` and `packages/cafe_shelly_m.yaml` | The logic in HA | From the repository |
 | `shelly/contador_cafe.js` | The plug script | From the repository |
-| `dashboard/vista-cafe.yaml` | The Coffee dashboard view | From the repository, optional |
+| `dashboard/coffee-view.yaml` | The Coffee dashboard view | From the repository, optional (Portuguese version: vista-cafe.yaml) |
 
 ## Step 1: set up the Shelly Plug M Gen3
 
@@ -112,7 +112,7 @@ This step is optional: counting already works without it. It adds the Coffee vie
 
 1. Install the **button-card** and **apexcharts-card** cards through HACS (in HA 2026.11 it lives under *Settings → Marketplace*). Reload the browser afterwards.
 2. Open the dashboard you want the view in, click the three dots and choose **Edit dashboard → Raw configuration editor**.
-3. Under `views:`, paste the contents of `dashboard/vista-cafe.yaml` as one more list item, with the same indentation as the other views. Save.
+3. Under `views:`, paste the contents of `dashboard/coffee-view.yaml` as one more list item, with the same indentation as the other views. Save. For Portuguese labels, paste dashboard/vista-cafe.yaml instead.
 4. The file has three `custom:jarvis-popup-card` cards, a personal card that is not published and does not exist in other installations. Before using the dashboard, delete these three cards from the YAML or replace them with cards you have installed. If you leave them, they show up as broken cards.
 5. The machine card shows the model, serial number and purchase date. Replace those texts with your own machine's, and the photo if it is a different machine.
 

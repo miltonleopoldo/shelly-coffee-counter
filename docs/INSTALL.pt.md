@@ -15,7 +15,7 @@ Este guia leva-te da tomada ainda na caixa até ao separador Café a contar bebi
 | HACS com button-card e apexcharts-card | Só para o dashboard | Opcional |
 | `packages/cafe.yaml` e `packages/cafe_shelly_m.yaml` | A lógica no HA | Do repositório |
 | `shelly/contador_cafe.js` | O script da tomada | Do repositório |
-| `dashboard/vista-cafe.yaml` | O separador Café | Do repositório, opcional |
+| `dashboard/vista-cafe.yaml` | O separador Café | Do repositório, opcional (versão em inglês: coffee-view.yaml) |
 
 ## Passo 1: configurar a Shelly Plug M Gen3
 
@@ -112,7 +112,7 @@ Este passo é opcional: a contagem já funciona sem ele. Acrescenta o separador 
 
 1. Instala pelo HACS (no HA 2026.11 está em *Definições → Marketplace*) os cartões **button-card** e **apexcharts-card**. Recarrega o browser depois de instalares.
 2. Abre o dashboard onde queres o separador, carrega nos três pontos e escolhe **Editar dashboard → Editor de configuração em texto**.
-3. Dentro de `views:`, cola o conteúdo de `dashboard/vista-cafe.yaml` como mais um item da lista, com a mesma indentação das outras vistas. Guarda.
+3. Dentro de `views:`, cola o conteúdo de `dashboard/vista-cafe.yaml` como mais um item da lista, com a mesma indentação das outras vistas. Guarda. Se quiseres o separador em inglês, cola antes o dashboard/coffee-view.yaml.
 4. O ficheiro tem três cartões `custom:jarvis-popup-card`, que são um cartão pessoal não publicado e não existem noutras instalações. Antes de usares o dashboard, apaga estes três cartões do YAML ou troca-os por cartões que tenhas instalados. Se os deixares, aparecem como cartões com erro.
 5. O cartão da máquina mostra modelo, número de série e data de compra. Troca esses textos pelos da tua máquina, e a foto se for outra.
 

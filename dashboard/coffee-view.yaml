@@ -1,0 +1,1978 @@
+# Coffee view (sections) - paste it under views: in Edit dashboard > Raw configuration editor
+# Needs: button-card, apexcharts-card (HACS) and the cafe.yaml package
+title: Coffee
+path: coffee
+icon: mdi:coffee
+type: sections
+max_columns: 4
+sections:
+- type: grid
+  column_span: 4
+  cards:
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    update_timer: 20s
+    tap_action:
+      action: none
+    variables:
+      sub: COFFEE · MACHINE
+      line: Drinks and capsule stock.
+      rows:
+      - - BREWING
+        - binary_sensor.cafe_a_extrair
+      - - TODAY
+        - sensor.cafes_hoje
+      - - THIS WEEK
+        - sensor.cafes_esta_semana
+      - - STOCK
+        - sensor.cafe_stock
+        - min
+        - 20
+      - - DAYS OF STOCK
+        - sensor.cafe_stock_dias
+        - min
+        - 5
+      - - MAINTENANCE
+        - input_boolean.cafe_manutencao
+        - 'off'
+    triggers_update:
+    - binary_sensor.cafe_a_extrair
+    - sensor.cafes_hoje
+    - sensor.cafes_esta_semana
+    - sensor.cafe_stock
+    - sensor.cafe_stock_dias
+    - input_boolean.cafe_manutencao
+    custom_fields:
+      hud: |-
+        [[[
+        const V=variables;const C='#00e5ff',W='#ffb300',R='#ff4d4d';
+        const tr={off:'OFF',on:'ON',cool:'COOLING',heat:'HEATING',auto:'AUTO',heat_cool:'AUTO',dry:'DRY',fan_only:'FAN',unavailable:'UNAVAILABLE',unknown:'UNKNOWN'};
+        let alert='';let rows='';
+        V.rows.forEach((r)=>{let st=states[r[1]];let v='--';let bad=false;
+        if(String(r[1]).charAt(0)==='@'){st=null;const all=Object.values(states);
+        if(r[1]==='@count'){v=String(all.filter((s)=>s.entity_id.indexOf(r[2]+'.')===0&&(!r[3]||s.state===r[3])).length);}
+        else{const b=all.filter((s)=>s.entity_id.indexOf('sensor.')===0&&s.attributes.device_class==='battery'&&!isNaN(parseFloat(s.state))).map((s)=>[parseFloat(s.state),s.attributes.friendly_name||s.entity_id]).sort((x,y)=>x[0]-y[0]);
+        if(r[1]==='@batcount')v=String(b.length);
+        if(r[1]==='@batlow'){const n=b.filter((x)=>x[0]<r[2]).length;v=String(n);bad=n>0;if(bad&&!alert)alert='WARNING: '+n+(n===1?' BATTERY':' BATTERIES')+' BELOW '+r[2]+' %';}
+        if(r[1]==='@batmin'&&b.length){v=Math.round(b[0][0])+' % · '+String(b[0][1]).replace(/ battery| bateria/i,'').toUpperCase().slice(0,22);bad=b[0][0]<r[2];}}}
+        if(st){const x=parseFloat(st.state);const u=st.attributes.unit_of_measurement||'';
+        if(r[2]==='off'){bad=st.state==='on';v=bad?'YES':'NO';}
+        else if(!isNaN(x)&&String(st.state).trim()!==''&&isFinite(st.state)){v=(Math.round(x*10)/10)+' '+u;if(r[2]==='max'&&x>r[3])bad=true;if(r[2]==='min'&&x<r[3])bad=true;}
+        else{v=(tr[st.state]||st.state).toUpperCase();if(r[2]==='ok'&&st.state!==r[3])bad=true;}
+        if(st.state==='unavailable'||st.state==='unknown'){v=tr[st.state];bad=true;}}
+        if(bad&&!alert)alert='WARNING: '+r[0]+(r[2]==='off'?' ON':' OUT OF RANGE');
+        rows+='<div class="r"><span>'+r[0]+'</span><i></i><b style="color:'+(bad?W:'#d6f6ff')+'">'+v+'</b></div>';});
+        const n=new Date();const hh=String(n.getHours()).padStart(2,'0');const mm=String(n.getMinutes()).padStart(2,'0');
+        const dt=n.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+        return '<style>'
+        +'.w{display:grid;grid-template-columns:150px 1fr auto;gap:26px;align-items:center;padding:16px 26px;text-align:left}'
+        +'.t{font-size:12px;letter-spacing:.42em;color:#6fb9cf}'
+        +'.n{font-size:34px;font-weight:700;letter-spacing:.3em;color:#00e5ff;text-shadow:0 0 18px rgba(0,229,255,.75);line-height:1.15}'
+        +'.g{font-size:16px;color:#d6f6ff;margin-top:8px;letter-spacing:.04em}'
+        +'.m{font-size:12px;letter-spacing:.2em;margin-top:6px}'
+        +'.c{font-size:64px;font-weight:300;letter-spacing:.06em;color:#d6f6ff;text-shadow:0 0 22px rgba(0,229,255,.55);line-height:1;text-align:right}'
+        +'.d{font-size:11px;letter-spacing:.24em;color:#6fb9cf;text-align:right;margin-top:6px}'
+        +'.s{margin-top:12px;min-width:330px}'
+        +'.r{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.18em;padding:3px 0}'
+        +'.r span{color:#6fb9cf}.r i{flex:1;border-bottom:1px dotted rgba(0,229,255,.3)}.r b{font-weight:600}'
+        +'.w>div{min-width:0}@media(max-width:900px){.w{grid-template-columns:1fr;text-align:center;gap:12px;padding:14px 14px}.c,.d{text-align:center}.x{margin:0 auto;width:92px;height:92px}.t{font-size:10px;letter-spacing:.22em}.n{font-size:24px;letter-spacing:.2em}.g{font-size:14px}.m{font-size:11px;letter-spacing:.12em}.c{font-size:46px}.d{font-size:10px;letter-spacing:.12em}.s{min-width:0;margin-top:10px}.r{font-size:11px;letter-spacing:.08em;gap:8px}.r b{text-align:right}}'
+        +'</style>'
+        +'<div class="w"><svg class="x" viewBox="0 0 200 200" width="150" height="150">'
+        +'<circle cx="100" cy="100" r="94" fill="none" stroke="'+C+'" stroke-opacity=".35" stroke-width="1"/>'
+        +'<g><circle cx="100" cy="100" r="84" fill="none" stroke="'+C+'" stroke-width="5" stroke-dasharray="70 18 8 18" stroke-opacity=".9"/><animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="18s" repeatCount="indefinite"/></g>'
+        +'<g><circle cx="100" cy="100" r="68" fill="none" stroke="'+C+'" stroke-width="2" stroke-dasharray="3 9" stroke-opacity=".8"/><animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="26s" repeatCount="indefinite"/></g>'
+        +'<g><circle cx="100" cy="100" r="54" fill="none" stroke="'+(alert?W:C)+'" stroke-width="8" stroke-dasharray="26 8" stroke-opacity=".85"/><animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="9s" repeatCount="indefinite"/></g>'
+        +'<circle cx="100" cy="100" r="36" fill="'+C+'" fill-opacity=".10" stroke="'+C+'" stroke-width="1.5"/>'
+        +'<circle cx="100" cy="100" r="20" fill="'+(alert?W:C)+'"><animate attributeName="fill-opacity" values=".35;.95;.35" dur="2.4s" repeatCount="indefinite"/><animate attributeName="r" values="18;22;18" dur="2.4s" repeatCount="indefinite"/></circle>'
+        +'</svg>'
+        +'<div><div class="t">'+V.sub+'</div><div class="n">J.A.R.V.I.S.</div>'
+        +'<div class="g">'+V.line+'</div>'
+        +'<div class="m" style="color:'+(alert?W:C)+'">'+(alert||'ALL SYSTEMS OPERATIONAL')+'</div></div>'
+        +'<div><div class="c">'+hh+':'+mm+'</div><div class="d">'+dt+'</div><div class="s">'+rows+'</div></div></div>';
+        ]]]
+    styles:
+      card:
+      - padding: '0'
+      - cursor: default
+      grid:
+      - grid-template-areas: '"hud"'
+      - grid-template-columns: 1fr
+      custom_fields:
+        hud:
+        - width: 100%
+    grid_options:
+      columns: full
+- type: grid
+  column_span: 4
+  cards:
+  - type: heading
+    heading: Coffee consumption
+    heading_style: title
+    icon: mdi:coffee
+  - type: custom:button-card
+    entity: binary_sensor.cafe_a_extrair
+    show_name: false
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    triggers_update:
+    - sensor.coffee_machine_power
+    - input_text.cafe_ultima
+    - switch.coffee_machine
+    - sensor.cafes_hoje
+    - sensor.coffee_machine_energy
+    - input_boolean.cafe_manutencao
+    styles:
+      card:
+      - padding: 16px
+      - border-radius: 16px
+      - height: 340px
+      - box-sizing: border-box
+      grid:
+      - grid-template-areas: '"x"'
+      - grid-template-columns: 1fr
+      - grid-template-rows: 1fr
+      - align-content: stretch
+      - height: 100%
+      custom_fields:
+        x:
+        - width: 100%
+        - text-align: left
+        - height: 100%
+        btn:
+        - position: absolute
+        - right: 16px
+        - bottom: 16px
+        - width: auto
+        man:
+        - position: absolute
+        - left: 16px
+        - bottom: 16px
+        - width: auto
+    custom_fields:
+      x: |
+        [[[ const muted='var(--secondary-text-color)'; const n=e=>parseFloat(states[e]?.state);
+        const hdr=(ic,t)=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${ic}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${t}</div>`;
+        const on=entity.state==='on', p=n('sensor.coffee_machine_power'), sw=states['switch.coffee_machine']?.state, last=states['input_text.cafe_ultima']?.state||'—';
+        const c=new Date(2024,10,20), d=new Date(); let m=(d.getFullYear()-c.getFullYear())*12+d.getMonth()-c.getMonth(); if(d.getDate()<c.getDate()) m--;
+        const a=Math.floor(m/12), r=m%12; const idade=[a?a+(a>1?' years':' year'):'', r?r+(r>1?' months':' month'):''].filter(Boolean).join(' and ')||'less than a month';
+        const man=states['input_boolean.cafe_manutencao']?.state==='on'; const st=man?'Maintenance, not counting':on?'Brewing…':sw==='on'?'On':'Off', col=man?'#fb8c00':on?'#fb8c00':sw==='on'?'#43a047':muted;
+        const tile=(l,v)=>`<div style="background:var(--secondary-background-color,rgba(127,127,127,.08));border-radius:10px;padding:8px 10px;min-width:0"><div style="font-size:11px;color:${muted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</div><div style="font-size:20px;font-weight:500">${v}</div></div>`;
+        return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;gap:10px">${hdr('mdi:coffee-maker','Machine')}
+        <div style="display:flex;gap:12px;align-items:center">
+         <div style="flex:0 0 118px;height:118px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="https://dam.delonghigroup.com/902x902/assets/207904" style="width:100%;height:100%;object-fit:contain" alt="Lattissima One Evo"></div>
+         <div style="min-width:0;display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:13px;color:${muted}">De'Longhi · Nespresso</div>
+          <div style="font-size:19px;font-weight:600;line-height:1.2">Lattissima One Evo</div>
+          <div style="font-size:13px;color:${muted}">Model EN510.B</div>
+          <div style="font-size:13px;color:${muted};word-break:break-all">Serial no. XXXXXXXXXXXXXXXXXXX</div>
+          <div style="font-size:13px;color:${muted}">Bought on 20/11/2024 · ${idade} ago</div>
+         </div></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:${col};flex:0 0 10px"></span><span style="font-size:17px;font-weight:500">${st}</span><span style="font-size:13px;color:${muted}">${isNaN(p)?'':'· '+Math.round(p)+' W now'}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${[['Drinks today',(Math.round(n('sensor.cafes_hoje'))||0)],['Peak 3 min',Math.round(n('sensor.cafe_potencia_maxima_recente')||0)+' W'],['Plug energy',((n('sensor.coffee_machine_energy')+0.1939)*1000).toFixed(0)+' Wh'],['Counts above','600 W']].map(([l,v])=>tile(l,v)).join('')}</div>
+        <div style="height:34px"></div></div>`; ]]]
+      btn:
+        card:
+          type: custom:button-card
+          name: Buy coffee
+          icon: mdi:cart-outline
+          show_state: false
+          layout: icon_name
+          tap_action:
+            action: url
+            url_path: https://www.nespresso.com/
+          styles:
+            card:
+            - background: '#b07a52'
+            - border-radius: 20px
+            - padding: 7px 14px
+            - box-shadow: none
+            - border: none
+            - color: '#fff'
+            grid:
+            - grid-template-areas: '"i n"'
+            - grid-template-columns: 20px auto
+            - column-gap: 6px
+            icon:
+            - width: 18px
+            - color: '#fff'
+            name:
+            - font-size: 14px
+            - font-weight: '500'
+            - color: '#fff'
+            - justify-self: start
+      man:
+        card:
+          type: custom:button-card
+          entity: input_boolean.cafe_manutencao
+          name: Maintenance
+          icon: mdi:wrench
+          show_state: false
+          layout: icon_name
+          tap_action:
+            action: toggle
+          state:
+          - value: 'on'
+            name: Maintenance on
+            styles:
+              card:
+              - background: '#fb8c00'
+              name:
+              - color: '#fff'
+              icon:
+              - color: '#fff'
+          styles:
+            card:
+            - background: var(--secondary-background-color, rgba(127,127,127,.15))
+            - border-radius: 20px
+            - padding: 7px 14px
+            - box-shadow: none
+            - border: none
+            grid:
+            - grid-template-areas: '"i n"'
+            - grid-template-columns: 20px auto
+            - column-gap: 6px
+            icon:
+            - width: 18px
+            - color: var(--primary-text-color)
+            name:
+            - font-size: 14px
+            - font-weight: '500'
+            - justify-self: start
+    grid_options:
+      columns: 16
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: custom:button-card
+      entity: sensor.cafes_hoje
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: more-info
+      styles:
+        card:
+        - padding: 14px
+        - border-radius: 16px
+        - height: 166px
+        - box-sizing: border-box
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)'; const n=e=>{const v=parseFloat(states[e]?.state); return isNaN(v)?0:v;};
+          const tot=Math.round(n(P.tot)); const T=[['Coffee','Coffees',Math.round(n(P.caf)),'#b07a52'],['Cappuccino','Cappuccinos',Math.round(n(P.cap)),'#f0c987']];
+          const soma=T.reduce((a,t)=>a+t[2],0)||1;
+          const d=new Date(); let dias=1;
+          if(P.per==='semana') dias=(d.getDay()+6)%7+1; else if(P.per==='mes') dias=d.getDate();
+          else if(P.per==='ano'){ const s=states['sensor.cafes_por_hora_do_dia']?.attributes?.desde; const ds=s?new Date(s):new Date(d.getFullYear(),0,1); dias=Math.max(1,Math.floor((d-new Date(ds.getFullYear(),ds.getMonth(),ds.getDate()))/864e5)+1); }
+          const fmt=x=>x.toLocaleString('en-GB',{maximumFractionDigits:1});
+          const sub=P.per==='hoje'?`${fmt(n('sensor.cafe_energia_hoje'))} Wh used by drinks`:`average ${fmt(tot/dias)} per day`+(P.per==='ano'?' since the start':'');
+          return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:38px;font-weight:300;line-height:1;color:#b07a52">${tot}</span><span style="font-size:13px;color:${muted}">${tot===1?'drink':'drinks'}</span></div>
+          <div style="font-size:12px;color:${muted};margin-top:4px">${sub}</div></div>
+          <div><div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(127,127,127,.18)">${T.map(t=>t[2]?`<div style="width:${t[2]/soma*100}%;background:${t[3]}"></div>`:'').join('')}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:${muted}">${T.map(t=>`<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t[3]};margin-right:4px"></span>${t[2]} ${t[2]===1?t[0].toLowerCase():t[1].toLowerCase()}</span>`).join('')}</div></div>
+          </div>`; ]]]
+      triggers_update:
+      - sensor.cafes_hoje
+      - sensor.cappuccinos_hoje
+      - sensor.cafe_so_cafe_hoje
+      - sensor.cafe_energia_hoje
+      variables:
+        tot: sensor.cafes_hoje
+        cap: sensor.cappuccinos_hoje
+        per: hoje
+        title: Today
+        icon: mdi:coffee
+        caf: sensor.cafe_so_cafe_hoje
+    - type: custom:button-card
+      entity: sensor.cafes_esta_semana
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: more-info
+      styles:
+        card:
+        - padding: 14px
+        - border-radius: 16px
+        - height: 166px
+        - box-sizing: border-box
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)'; const n=e=>{const v=parseFloat(states[e]?.state); return isNaN(v)?0:v;};
+          const tot=Math.round(n(P.tot)); const T=[['Coffee','Coffees',Math.round(n(P.caf)),'#b07a52'],['Cappuccino','Cappuccinos',Math.round(n(P.cap)),'#f0c987']];
+          const soma=T.reduce((a,t)=>a+t[2],0)||1;
+          const d=new Date(); let dias=1;
+          if(P.per==='semana') dias=(d.getDay()+6)%7+1; else if(P.per==='mes') dias=d.getDate();
+          else if(P.per==='ano'){ const s=states['sensor.cafes_por_hora_do_dia']?.attributes?.desde; const ds=s?new Date(s):new Date(d.getFullYear(),0,1); dias=Math.max(1,Math.floor((d-new Date(ds.getFullYear(),ds.getMonth(),ds.getDate()))/864e5)+1); }
+          const fmt=x=>x.toLocaleString('en-GB',{maximumFractionDigits:1});
+          const sub=P.per==='hoje'?`${fmt(n('sensor.cafe_energia_hoje'))} Wh used by drinks`:`average ${fmt(tot/dias)} per day`+(P.per==='ano'?' since the start':'');
+          return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:38px;font-weight:300;line-height:1;color:#b07a52">${tot}</span><span style="font-size:13px;color:${muted}">${tot===1?'drink':'drinks'}</span></div>
+          <div style="font-size:12px;color:${muted};margin-top:4px">${sub}</div></div>
+          <div><div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(127,127,127,.18)">${T.map(t=>t[2]?`<div style="width:${t[2]/soma*100}%;background:${t[3]}"></div>`:'').join('')}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:${muted}">${T.map(t=>`<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t[3]};margin-right:4px"></span>${t[2]} ${t[2]===1?t[0].toLowerCase():t[1].toLowerCase()}</span>`).join('')}</div></div>
+          </div>`; ]]]
+      variables:
+        tot: sensor.cafes_esta_semana
+        cap: sensor.cappuccinos_esta_semana
+        per: semana
+        title: This week
+        icon: mdi:calendar-week
+        caf: sensor.cafe_so_cafe_semana
+      triggers_update:
+      - sensor.cafes_esta_semana
+      - sensor.cappuccinos_esta_semana
+      - sensor.cafe_so_cafe_semana
+      - sensor.cafe_energia_hoje
+    - type: custom:button-card
+      entity: sensor.cafes_este_mes
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: more-info
+      styles:
+        card:
+        - padding: 14px
+        - border-radius: 16px
+        - height: 166px
+        - box-sizing: border-box
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)'; const n=e=>{const v=parseFloat(states[e]?.state); return isNaN(v)?0:v;};
+          const tot=Math.round(n(P.tot)); const T=[['Coffee','Coffees',Math.round(n(P.caf)),'#b07a52'],['Cappuccino','Cappuccinos',Math.round(n(P.cap)),'#f0c987']];
+          const soma=T.reduce((a,t)=>a+t[2],0)||1;
+          const d=new Date(); let dias=1;
+          if(P.per==='semana') dias=(d.getDay()+6)%7+1; else if(P.per==='mes') dias=d.getDate();
+          else if(P.per==='ano'){ const s=states['sensor.cafes_por_hora_do_dia']?.attributes?.desde; const ds=s?new Date(s):new Date(d.getFullYear(),0,1); dias=Math.max(1,Math.floor((d-new Date(ds.getFullYear(),ds.getMonth(),ds.getDate()))/864e5)+1); }
+          const fmt=x=>x.toLocaleString('en-GB',{maximumFractionDigits:1});
+          const sub=P.per==='hoje'?`${fmt(n('sensor.cafe_energia_hoje'))} Wh used by drinks`:`average ${fmt(tot/dias)} per day`+(P.per==='ano'?' since the start':'');
+          return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:38px;font-weight:300;line-height:1;color:#b07a52">${tot}</span><span style="font-size:13px;color:${muted}">${tot===1?'drink':'drinks'}</span></div>
+          <div style="font-size:12px;color:${muted};margin-top:4px">${sub}</div></div>
+          <div><div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(127,127,127,.18)">${T.map(t=>t[2]?`<div style="width:${t[2]/soma*100}%;background:${t[3]}"></div>`:'').join('')}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:${muted}">${T.map(t=>`<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t[3]};margin-right:4px"></span>${t[2]} ${t[2]===1?t[0].toLowerCase():t[1].toLowerCase()}</span>`).join('')}</div></div>
+          </div>`; ]]]
+      triggers_update:
+      - sensor.cafes_este_mes
+      - sensor.cappuccinos_este_mes
+      - sensor.cafe_so_cafe_mes
+      - sensor.cafe_energia_hoje
+      variables:
+        tot: sensor.cafes_este_mes
+        cap: sensor.cappuccinos_este_mes
+        per: mes
+        title: This month
+        icon: mdi:calendar-month
+        caf: sensor.cafe_so_cafe_mes
+    - type: custom:button-card
+      entity: sensor.cafes_este_ano
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: more-info
+      styles:
+        card:
+        - padding: 14px
+        - border-radius: 16px
+        - height: 166px
+        - box-sizing: border-box
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)'; const n=e=>{const v=parseFloat(states[e]?.state); return isNaN(v)?0:v;};
+          const tot=Math.round(n(P.tot)); const T=[['Coffee','Coffees',Math.round(n(P.caf)),'#b07a52'],['Cappuccino','Cappuccinos',Math.round(n(P.cap)),'#f0c987']];
+          const soma=T.reduce((a,t)=>a+t[2],0)||1;
+          const d=new Date(); let dias=1;
+          if(P.per==='semana') dias=(d.getDay()+6)%7+1; else if(P.per==='mes') dias=d.getDate();
+          else if(P.per==='ano'){ const s=states['sensor.cafes_por_hora_do_dia']?.attributes?.desde; const ds=s?new Date(s):new Date(d.getFullYear(),0,1); dias=Math.max(1,Math.floor((d-new Date(ds.getFullYear(),ds.getMonth(),ds.getDate()))/864e5)+1); }
+          const fmt=x=>x.toLocaleString('en-GB',{maximumFractionDigits:1});
+          const sub=P.per==='hoje'?`${fmt(n('sensor.cafe_energia_hoje'))} Wh used by drinks`:`average ${fmt(tot/dias)} per day`+(P.per==='ano'?' since the start':'');
+          return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:38px;font-weight:300;line-height:1;color:#b07a52">${tot}</span><span style="font-size:13px;color:${muted}">${tot===1?'drink':'drinks'}</span></div>
+          <div style="font-size:12px;color:${muted};margin-top:4px">${sub}</div></div>
+          <div><div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(127,127,127,.18)">${T.map(t=>t[2]?`<div style="width:${t[2]/soma*100}%;background:${t[3]}"></div>`:'').join('')}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:${muted}">${T.map(t=>`<span style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t[3]};margin-right:4px"></span>${t[2]} ${t[2]===1?t[0].toLowerCase():t[1].toLowerCase()}</span>`).join('')}</div></div>
+          </div>`; ]]]
+      triggers_update:
+      - sensor.cafes_este_ano
+      - sensor.cafes_total_cappuccino
+      - sensor.cafes_total_cafe
+      - sensor.cafe_energia_hoje
+      variables:
+        tot: sensor.cafes_este_ano
+        cap: sensor.cafes_total_cappuccino
+        per: ano
+        title: This year
+        icon: mdi:calendar
+        caf: sensor.cafes_total_cafe
+    grid_options:
+      columns: 16
+  - type: custom:button-card
+    entity: sensor.cafe_ultimas_bebidas
+    show_name: false
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+      - padding: 16px
+      - border-radius: 16px
+      - height: 340px
+      - box-sizing: border-box
+      - overflow: hidden
+      grid:
+      - grid-template-areas: '"x"'
+      - grid-template-columns: 1fr
+      - align-content: start
+      custom_fields:
+        x:
+        - width: 100%
+        - text-align: left
+    custom_fields:
+      x: |
+        [[[ const muted='var(--secondary-text-color)'; const L=(entity?.attributes?.lista||[]).slice(0,10);
+        const hoje=new Date(); hoje.setHours(0,0,0,0); const DS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const p2=x=>('0'+x).slice(-2);
+        const dia=d=>{const x=new Date(d); x.setHours(0,0,0,0); const k=Math.round((hoje-x)/864e5); return k===0?'Today':k===1?'Yesterday':DS[d.getDay()]+' '+p2(d.getDate())+'/'+p2(d.getMonth()+1);};
+        const rows=L.map(b=>{const d=new Date(b.q); const cap=b.t==='cappuccino'; const NM={'café':'Coffee','lungo':'Lungo','expresso':'Espresso','cappuccino':'Cappuccino'}; return `<div style="display:grid;grid-template-columns:14px 1fr auto 44px auto;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(127,127,127,.12)">
+        <span style="width:10px;height:10px;border-radius:50%;background:${({expresso:'#8d5a3b',lungo:'#c8956b',cappuccino:'#f0c987'})[b.t]||'#b07a52'}"></span>
+        <span style="font-size:14px;font-weight:500">${NM[b.t]||b.t}</span>
+        <span style="font-size:13px;color:${muted}">${dia(d)} · ${p2(d.getHours())}:${p2(d.getMinutes())}</span>
+        <span style="font-size:13px;font-weight:500;text-align:right">${b.d} s</span><span style="font-size:12px;color:${muted};min-width:52px;text-align:right">${(+b.wh).toLocaleString('en-GB',{maximumFractionDigits:1})} Wh</span></div>`;}).join('');
+        return `<div style="display:flex;flex-direction:column;gap:6px;height:100%">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="mdi:format-list-bulleted" style="margin:0;--mdc-icon-size:18px"></ha-icon>Latest drinks</div>
+        <div>${rows||`<div style="color:${muted};font-size:13px;padding-top:8px">No drinks logged yet</div>`}</div></div>`; ]]]
+    grid_options:
+      columns: 16
+- type: grid
+  column_span: 4
+  cards:
+  - type: heading
+    heading: Capsules
+    heading_style: subtitle
+    icon: mdi:package-variant
+  - type: custom:jarvis-popup-card
+    grid_options:
+      columns: 14
+    card:
+      type: custom:button-card
+      entity: input_number.cafe_stock_capsulas
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: none
+      styles:
+        card:
+        - padding: 16px
+        - border-radius: 16px
+        - height: 331px
+        - box-sizing: border-box
+        - overflow: hidden
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+      custom_fields:
+        x: |
+          [[[ const muted='var(--secondary-text-color)'; const n=e=>parseFloat(states[e]?.state);
+          const st=Math.round(n('input_number.cafe_stock_capsulas')||0), mn=Math.round(n('input_number.cafe_stock_minimo')||0);
+          const dias=n('sensor.cafe_stock_dias'), media=parseFloat(states['sensor.cafe_stock_dias']?.attributes?.media_dia);
+          const av=states['input_boolean.cafe_avisos_stock']?.state==='on';
+          const col=st<=mn?'#e53935':st<=mn*2?'#fb8c00':'#b07a52';
+          const L=states['sensor.cafe_movimentos_de_stock']?.attributes?.lista||[]; const c=L.find(m=>m.t==='compra');
+          const p2=x=>('0'+x).slice(-2); const dt=q=>{const d=new Date(q); return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();};
+          const pct=Math.max(0,Math.min(100,mn?st/(mn*5)*100:100));
+          return `<div style="display:flex;flex-direction:column;justify-content:space-between;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="mdi:package-variant" style="margin:0;--mdc-icon-size:18px"></ha-icon>Capsule stock</div>
+          <div><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:56px;font-weight:300;line-height:1;color:${col}">${st}</span><span style="font-size:15px;color:${muted}">${st===1?'capsule':'capsules'}</span></div>
+          <div style="font-size:14px;margin-top:6px">${isNaN(dias)?'Not enough drinks yet to estimate':`Enough for about <b>${Math.round(dias)} ${Math.round(dias)===1?'day':'days'}</b>`}</div>
+          <div style="font-size:12px;color:${muted};margin-top:2px">${isNaN(media)?'':`at ${media.toLocaleString('en-GB',{maximumFractionDigits:1})} drinks per day (last 7 days)`}</div></div>
+          <div><div style="height:6px;border-radius:3px;background:rgba(127,127,127,.18);overflow:hidden"><div style="height:100%;width:${pct}%;background:${col}"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:${muted};margin-top:6px"><span><ha-icon icon="${av?'mdi:bell-ring-outline':'mdi:bell-off-outline'}" style="margin:0;--mdc-icon-size:14px"></ha-icon> ${av?`Alert at ${mn}`:'Alerts off'}</span><span>${c?'Last purchase: '+dt(c.q)+' (+'+c.n+')':'No purchases logged'}</span></div></div>
+          </div>`; ]]]
+      grid_options:
+        columns: 14
+      triggers_update:
+      - input_number.cafe_stock_minimo
+      - sensor.cafe_stock_dias
+      - input_boolean.cafe_avisos_stock
+      - sensor.cafe_movimentos_de_stock
+    buttons:
+    - icon: mdi:swap-vertical
+      label: Update
+      title: Update stock
+      popup:
+        title: Update stock
+        rows:
+        - entity: input_number.cafe_stock_quantidade
+          name: Quantity
+          icon: mdi:numeric
+        - type: actions
+          actions:
+          - name: Purchase
+            icon: mdi:cart-plus
+            perform_action: script.cafe_stock_movimento
+            data:
+              tipo: compra
+            done: Purchase logged
+          - name: Remove
+            icon: mdi:minus-circle-outline
+            perform_action: script.cafe_stock_movimento
+            data:
+              tipo: retirada
+            done: Removal logged
+          - name: Set
+            icon: mdi:check-circle-outline
+            perform_action: script.cafe_stock_movimento
+            data:
+              tipo: acerto
+            confirm: Set the stock to this quantity?
+            done: Stock set
+        - type: divider
+        - entity: input_number.cafe_stock_minimo
+          name: Alert when it reaches
+          icon: mdi:alert-outline
+        - type: toggle
+          entity: input_boolean.cafe_avisos_stock
+          name: Coffee purchase alerts
+          icon: mdi:bell-ring
+  - type: custom:button-card
+    entity: sensor.cafe_movimentos_de_stock
+    show_name: false
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+      - padding: 16px
+      - border-radius: 16px
+      - height: 331px
+      - box-sizing: border-box
+      - overflow: hidden
+      grid:
+      - grid-template-areas: '"x"'
+      - grid-template-columns: 1fr
+      - grid-template-rows: 1fr
+      - align-content: stretch
+      - height: 100%
+      custom_fields:
+        x:
+        - width: 100%
+        - text-align: left
+        - height: 100%
+    custom_fields:
+      x: |
+        [[[ const muted='var(--secondary-text-color)'; const L=(entity?.attributes?.lista||[]).slice(0,8);
+        const p2=x=>('0'+x).slice(-2);
+        const T={compra:['Purchase','+','#43a047','mdi:cart-plus'],retirada:['Removal','−','#e53935','mdi:minus-circle-outline'],acerto:['Set','=','#42a5f5','mdi:check-circle-outline']};
+        const rows=L.map(m=>{const d=new Date(m.q); const t=T[m.t]||[m.t,'','#999','mdi:circle-small']; return `<div style="display:grid;grid-template-columns:22px 1fr auto auto;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(127,127,127,.12)">
+        <ha-icon icon="${t[3]}" style="margin:0;--mdc-icon-size:18px;color:${t[2]}"></ha-icon>
+        <span style="font-size:14px;font-weight:500">${t[0]} <span style="color:${t[2]}">${t[1]}${m.n}</span></span>
+        <span style="font-size:13px;color:${muted}">${p2(d.getDate())}/${p2(d.getMonth()+1)} · ${p2(d.getHours())}:${p2(d.getMinutes())}</span>
+        <span style="font-size:12px;color:${muted};min-width:62px;text-align:right">left ${m.s}</span></div>`;}).join('');
+        return `<div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="mdi:swap-vertical" style="margin:0;--mdc-icon-size:18px"></ha-icon>Stock changes</div>
+        <div>${rows||`<div style="color:${muted};font-size:13px;padding-top:8px">No changes yet</div>`}</div>
+        <div style="font-size:11px;color:${muted}">Each drink takes 1 capsule off automatically.</div></div>`; ]]]
+    grid_options:
+      columns: 16
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Capsule stock · 60 days
+      show_states: false
+    graph_span: 60d
+    span:
+      end: day
+    now:
+      show: false
+    series:
+    - entity: sensor.cafe_stock
+      name: Stock
+      type: area
+      curve: stepline
+      color: '#b07a52'
+      stroke_width: 2
+      show:
+        in_header: false
+        legend_value: false
+      data_generator: |-
+        return hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(start).toISOString(),end_time:new Date(end).toISOString(),statistic_ids:[entity.entity_id],period:'hour',types:['max']}).then(r=>{
+         const pts=(r[entity.entity_id]||[]).map(o=>[o.start,o.max]);
+         const cur=Number(entity.state); if(!isNaN(cur)) pts.push([Date.now(),cur]);
+         return pts;});
+    apex_config:
+      chart:
+        height: 276
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+      fill:
+        type: gradient
+        gradient:
+          type: vertical
+          shadeIntensity: 0
+          opacityFrom: 0.45
+          opacityTo: 0.05
+      legend:
+        show: false
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          format: dd/MM
+          style:
+            fontSize: 11px
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        decimalsInFloat: 0
+      tooltip:
+        theme: dark
+        x:
+          format: dd/MM HH:mm
+        y:
+          formatter: EVAL:function(v){return v==null?'—':Math.round(v)+' capsules'}
+      annotations:
+        yaxis:
+        - y: 20
+          borderColor: '#e53935'
+          strokeDashArray: 4
+          label:
+            text: minimum
+            style:
+              background: '#e53935'
+              color: '#fff'
+              fontSize: 10px
+    grid_options:
+      columns: 18
+    update_interval: 5min
+- type: grid
+  column_span: 4
+  cards:
+  - type: heading
+    heading: History
+    heading_style: subtitle
+    icon: mdi:chart-bar
+  - type: custom:button-card
+    entity: sensor.cafes_por_hora_do_dia
+    show_name: false
+    show_icon: false
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+      - padding: 16px
+      - border-radius: 16px
+      grid:
+      - grid-template-areas: '"x"'
+      - grid-template-columns: 1fr
+      custom_fields:
+        x:
+        - width: 100%
+        - text-align: left
+    custom_fields:
+      x: |-
+        [[[
+        const muted='var(--secondary-text-color)', div='var(--divider-color, rgba(127,127,127,.25))';
+        const A=entity.attributes||{}, e=A.cafe||Array(24).fill(0), l=Array(24).fill(0), k=A.cappuccino||Array(24).fill(0);
+        const tot=e.map((v,i)=>v+l[i]+k[i]), max=Math.max(1,...tot), sum=tot.reduce((a,b)=>a+b,0);
+        const draw = (W) => { const H=230, top=24, base=190, bw=W/24;
+        let g='';
+        for (let y=1; y<=4; y++){ const v=Math.ceil(max*y/4); const yy=base-(v/max)*(base-top); g+=`<line x1="0" x2="${W}" y1="${yy}" y2="${yy}" stroke="${div}" stroke-width="1"/><text x="2" y="${yy-3}" font-size="10" fill="${muted}">${v}</text>`; }
+        const nowH=new Date().getHours();
+        for (let i=0;i<24;i++){ const x=i*bw+bw*0.18, w=bw*0.64; const he=(e[i]/max)*(base-top), hl=(l[i]/max)*(base-top), hk=(k[i]/max)*(base-top), hc=he+hl;
+          if(he) g+=`<rect x="${x}" y="${base-he}" width="${w}" height="${he}" rx="3" fill="#b07a52"/>`; if(hl) g+=`<rect x="${x}" y="${base-he-hl}" width="${w}" height="${hl}" rx="3" fill="#c8956b"/>`;
+          if(hk) g+=`<rect x="${x}" y="${base-hc-hk}" width="${w}" height="${hk}" rx="3" fill="#f0c987"/>`;
+          if(tot[i]) g+=`<text x="${x+w/2}" y="${base-hc-hk-5}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--primary-text-color)">${tot[i]}</text>`;
+          g+=`<text x="${i*bw+bw/2}" y="${base+16}" text-anchor="middle" font-size="11" fill="${i===nowH?'var(--primary-color)':muted}">${i}h</text>`; }
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${g}</svg>`; };
+        const pk=tot.indexOf(Math.max(...tot));
+        const desde=A.desde?new Date(A.desde).toLocaleDateString('en-GB'):'';
+        return `<div style="display:flex;flex-direction:column;gap:6px">
+         <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="mdi:clock-outline" style="margin:0;--mdc-icon-size:18px"></ha-icon>Drinks by hour of day</div>
+          <div style="font-size:12px;color:${muted};display:flex;gap:14px;flex-wrap:wrap">
+           <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#b07a52"></span> Coffee</span>
+           <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f0c987"></span> Cappuccino</span>
+           <span>${sum} drinks since ${desde}${sum ? ' · busiest hour: ' + pk + 'h' : ''}</span></div></div>
+         <style>.cw{display:none}@media (min-width:1700px){.cn{display:none}.cw{display:block}}</style><div class="cn">${draw(1000)}</div><div class="cw">${draw(2000)}</div></div>`;
+        ]]]
+    grid_options:
+      columns: full
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Drinks per day · 30 days
+      show_states: false
+    graph_span: 30d
+    span:
+      end: day
+    stacked: true
+    now:
+      show: false
+    apex_config:
+      chart:
+        height: 280
+        type: bar
+        stacked: true
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+        animations:
+          enabled: true
+          speed: 400
+        dropShadow:
+          enabled: false
+      plotOptions:
+        bar:
+          columnWidth: 62%
+          borderRadius: 4
+          borderRadiusApplication: end
+          borderRadiusWhenStacked: last
+          dataLabels:
+            position: top
+            total:
+              enabled: true
+              offsetY: -4
+              style:
+                fontSize: 12px
+                fontWeight: 600
+                color: '#bdbdbd'
+              formatter: EVAL:function(v){return v>0?v:''}
+      fill:
+        type: solid
+        opacity: 1
+      stroke:
+        width: 0
+      dataLabels:
+        enabled: false
+        offsetY: -18
+        style:
+          fontSize: 12px
+          fontWeight: 600
+          colors:
+          - '#bdbdbd'
+        background:
+          enabled: false
+        formatter: EVAL:function(v){return v>0?Math.round(v*10)/10:''}
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+        yaxis:
+          lines:
+            show: true
+        padding:
+          left: 6
+          right: 10
+          top: 4
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          hideOverlappingLabels: true
+          style:
+            fontSize: 10px
+          formatter: EVAL:function(v){var d=new Date(v+36e5);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)}
+        tooltip:
+          enabled: false
+        crosshairs:
+          show: false
+        type: numeric
+        tickAmount: 30
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        decimalsInFloat: 0
+        labels:
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){return Math.round(v)}
+      legend:
+        show: true
+        position: top
+        horizontalAlign: right
+        fontSize: 12px
+        markers:
+          width: 10
+          height: 10
+          radius: 10
+        itemMargin:
+          horizontal: 8
+      tooltip:
+        theme: dark
+        shared: true
+        intersect: false
+        y:
+          formatter: EVAL:function(v,o){var N=[['coffee','coffees'],['cappuccino','cappuccinos']][o&&o.seriesIndex||0];return v==null?'—':v+' '+(v===1?N[0]:N[1])}
+        x:
+          format: dd/MM/yyyy
+      states:
+        hover:
+          filter:
+            type: lighten
+            value: 0.08
+        active:
+          filter:
+            type: none
+    series:
+    - entity: sensor.cafes_total_cafe
+      name: Coffee
+      color: '#b07a52'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='day';
+        const SER=[["sensor.cafes_total_cafe",1],["sensor.cafes_total_lungo",-1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_lungo
+      name: Lungo
+      color: '#7a4a2e'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='day';
+        const SER=[["sensor.cafes_total_lungo",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_cappuccino
+      name: Cappuccino
+      color: '#f0c987'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='day';
+        const SER=[["sensor.cafes_total_cappuccino",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    grid_options:
+      columns: 24
+    update_interval: 5min
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Drinks per month · 12 months
+      show_states: false
+    graph_span: 365d
+    span:
+      end: month
+    stacked: true
+    now:
+      show: false
+    apex_config:
+      chart:
+        height: 280
+        type: bar
+        stacked: true
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+        animations:
+          enabled: true
+          speed: 400
+        dropShadow:
+          enabled: false
+      plotOptions:
+        bar:
+          columnWidth: 62%
+          borderRadius: 4
+          borderRadiusApplication: end
+          borderRadiusWhenStacked: last
+          dataLabels:
+            position: top
+            total:
+              enabled: true
+              offsetY: -4
+              style:
+                fontSize: 12px
+                fontWeight: 600
+                color: '#bdbdbd'
+              formatter: EVAL:function(v){return v>0?v:''}
+      fill:
+        type: solid
+        opacity: 1
+      stroke:
+        width: 0
+      dataLabels:
+        enabled: false
+        offsetY: -18
+        style:
+          fontSize: 12px
+          fontWeight: 600
+          colors:
+          - '#bdbdbd'
+        background:
+          enabled: false
+        formatter: EVAL:function(v){return v>0?Math.round(v*10)/10:''}
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+        yaxis:
+          lines:
+            show: true
+        padding:
+          left: 6
+          right: 10
+          top: 4
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          hideOverlappingLabels: true
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(v+10*864e5).getMonth()]}
+        tooltip:
+          enabled: false
+        crosshairs:
+          show: false
+        type: numeric
+        tickAmount: 12
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        decimalsInFloat: 0
+        labels:
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){return Math.round(v)}
+      legend:
+        show: true
+        position: top
+        horizontalAlign: right
+        fontSize: 12px
+        markers:
+          width: 10
+          height: 10
+          radius: 10
+        itemMargin:
+          horizontal: 8
+      tooltip:
+        theme: dark
+        shared: true
+        intersect: false
+        y:
+          formatter: EVAL:function(v,o){var N=[['coffee','coffees'],['cappuccino','cappuccinos']][o&&o.seriesIndex||0];return v==null?'—':v+' '+(v===1?N[0]:N[1])}
+        x:
+          formatter: EVAL:function(v){var d=new Date(v);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear()}
+      states:
+        hover:
+          filter:
+            type: lighten
+            value: 0.08
+        active:
+          filter:
+            type: none
+    series:
+    - entity: sensor.cafes_total_cafe
+      name: Coffee
+      color: '#b07a52'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='month';
+        const SER=[["sensor.cafes_total_cafe",1],["sensor.cafes_total_lungo",-1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_lungo
+      name: Lungo
+      color: '#7a4a2e'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='month';
+        const SER=[["sensor.cafes_total_lungo",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_cappuccino
+      name: Cappuccino
+      color: '#f0c987'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='month';
+        const SER=[["sensor.cafes_total_cappuccino",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    grid_options:
+      columns: 24
+    update_interval: 5min
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Drinks per week · 12 weeks
+      show_states: false
+    graph_span: 84d
+    span:
+      end: isoWeek
+    stacked: true
+    now:
+      show: false
+    apex_config:
+      chart:
+        height: 280
+        type: bar
+        stacked: true
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+        animations:
+          enabled: true
+          speed: 400
+        dropShadow:
+          enabled: false
+      plotOptions:
+        bar:
+          columnWidth: 62%
+          borderRadius: 4
+          borderRadiusApplication: end
+          borderRadiusWhenStacked: last
+          dataLabels:
+            position: top
+            total:
+              enabled: true
+              offsetY: -4
+              style:
+                fontSize: 12px
+                fontWeight: 600
+                color: '#bdbdbd'
+              formatter: EVAL:function(v){return v>0?v:''}
+      fill:
+        type: solid
+        opacity: 1
+      stroke:
+        width: 0
+      dataLabels:
+        enabled: false
+        offsetY: -18
+        style:
+          fontSize: 12px
+          fontWeight: 600
+          colors:
+          - '#bdbdbd'
+        background:
+          enabled: false
+        formatter: EVAL:function(v){return v>0?Math.round(v*10)/10:''}
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+        yaxis:
+          lines:
+            show: true
+        padding:
+          left: 6
+          right: 10
+          top: 4
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          hideOverlappingLabels: true
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){var d=new Date(v+36e5);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)}
+        tooltip:
+          enabled: false
+        crosshairs:
+          show: false
+        type: numeric
+        tickAmount: 12
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        decimalsInFloat: 0
+        labels:
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){return Math.round(v)}
+      legend:
+        show: true
+        position: top
+        horizontalAlign: right
+        fontSize: 12px
+        markers:
+          width: 10
+          height: 10
+          radius: 10
+        itemMargin:
+          horizontal: 8
+      tooltip:
+        theme: dark
+        shared: true
+        intersect: false
+        y:
+          formatter: EVAL:function(v,o){var N=[['coffee','coffees'],['cappuccino','cappuccinos']][o&&o.seriesIndex||0];return v==null?'—':v+' '+(v===1?N[0]:N[1])}
+        x:
+          formatter: EVAL:function(v){var d=new Date(v),e=new Date(v+6*864e5),f=x=>('0'+x.getDate()).slice(-2)+'/'+('0'+(x.getMonth()+1)).slice(-2);return 'Week '+f(d)+' to '+f(e)}
+      states:
+        hover:
+          filter:
+            type: lighten
+            value: 0.08
+        active:
+          filter:
+            type: none
+    series:
+    - entity: sensor.cafes_total_cafe
+      name: Coffee
+      color: '#b07a52'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='week';
+        const SER=[["sensor.cafes_total_cafe",1],["sensor.cafes_total_lungo",-1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_lungo
+      name: Lungo
+      color: '#7a4a2e'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='week';
+        const SER=[["sensor.cafes_total_lungo",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    - entity: sensor.cafes_total_cappuccino
+      name: Cappuccino
+      color: '#f0c987'
+      type: column
+      show:
+        in_header: false
+        datalabels: false
+        legend_value: false
+      data_generator: |-
+        const P='week';
+        const SER=[["sensor.cafes_total_cappuccino",1]];
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        const one=async(id)=>{
+         const r=await hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[id],period:P,types:['change']});
+         const m=new Map(); (r[id]||[]).forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[id],period:p,types:['change']}).then(x=>(x[id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1]; const now=key(Date.now());
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         return m;};
+        return Promise.all(SER.map(x=>one(x[0]))).then(ms=>{
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ let val=0; ms.forEach((m,i)=>{val+=SER[i][1]*(m.get(d.getTime())||0);}); out.push([d.getTime(), Math.round(Math.max(val,0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    grid_options:
+      columns: 24
+    update_interval: 5min
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: Energy used by drinks per day (Wh)
+      show_states: false
+    graph_span: 30d
+    span:
+      end: day
+    stacked: false
+    now:
+      show: false
+    apex_config:
+      chart:
+        height: 280
+        type: bar
+        stacked: false
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+        animations:
+          enabled: true
+          speed: 400
+        dropShadow:
+          enabled: false
+      plotOptions:
+        bar:
+          columnWidth: 62%
+          borderRadius: 4
+          borderRadiusApplication: end
+          borderRadiusWhenStacked: last
+          dataLabels:
+            position: top
+            total:
+              enabled: false
+              offsetY: -4
+              style:
+                fontSize: 12px
+                fontWeight: 600
+                color: '#bdbdbd'
+              formatter: EVAL:function(v){return v>0?v:''}
+      fill:
+        type: solid
+        opacity: 1
+      stroke:
+        width: 0
+      dataLabels:
+        enabled: true
+        offsetY: -18
+        style:
+          fontSize: 12px
+          fontWeight: 600
+          colors:
+          - '#bdbdbd'
+        background:
+          enabled: false
+        formatter: EVAL:function(v){return v>0?Math.round(v*10)/10:''}
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+        yaxis:
+          lines:
+            show: true
+        padding:
+          left: 6
+          right: 10
+          top: 4
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          hideOverlappingLabels: true
+          style:
+            fontSize: 10px
+          formatter: EVAL:function(v){var d=new Date(v+36e5);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)}
+        tooltip:
+          enabled: false
+        crosshairs:
+          show: false
+        type: numeric
+        tickAmount: 30
+      yaxis:
+        min: 0
+        forceNiceScale: true
+        decimalsInFloat: 0
+        labels:
+          style:
+            fontSize: 11px
+          formatter: EVAL:function(v){return Math.round(v)}
+      legend:
+        show: false
+        position: top
+        horizontalAlign: right
+        fontSize: 12px
+        markers:
+          width: 10
+          height: 10
+          radius: 10
+        itemMargin:
+          horizontal: 8
+      tooltip:
+        theme: dark
+        shared: true
+        intersect: false
+        y:
+          formatter: EVAL:function(v){return v==null?'—':(Math.round(v*10)/10)+' Wh'}
+        x:
+          format: dd/MM/yyyy
+      states:
+        hover:
+          filter:
+            type: lighten
+            value: 0.08
+        active:
+          filter:
+            type: none
+    series:
+    - entity: sensor.cafe_energia_das_bebidas
+      name: Energy
+      color: '#c8956b'
+      type: column
+      show:
+        in_header: false
+        datalabels: true
+        legend_value: false
+      data_generator: |-
+        const P='day';
+        const s=new Date(start), e=new Date(end);
+        const key=d=>{const x=new Date(d); x.setHours(0,0,0,0); if(P==='week'){x.setDate(x.getDate()-((x.getDay()+6)%7));} if(P==='month') x.setDate(1); return x.getTime();};
+        return hass.callWS({type:'recorder/statistics_during_period',start_time:new Date(key(s)).toISOString(),end_time:e.toISOString(),statistic_ids:[entity.entity_id],period:P,types:['change','state']}).then(async r=>{
+         const st=r[entity.entity_id]||[]; const m=new Map();
+         st.forEach(o=>{const k=key(o.start); m.set(k,(m.get(k)||0)+(o.change||0));});
+         const now=key(Date.now()); const t0=new Date(); t0.setHours(0,0,0,0);
+         const q=(p)=>hass.callWS({type:'recorder/statistics_during_period',start_time:t0.toISOString(),statistic_ids:[entity.entity_id],period:p,types:['change']}).then(x=>(x[entity.entity_id]||[]).reduce((a,o)=>a+(o.change||0),0)).catch(()=>0);
+         const vals=await Promise.all([q('5minute'),q('hour')]); const extra=vals[0]-vals[1];
+         if(Math.abs(extra)>1e-9) m.set(now,(m.get(now)||0)+extra);
+         const out=[]; const d=new Date(key(+s+36e5));
+         while(d.getTime()<e.getTime()){ out.push([d.getTime(), Math.round((m.get(d.getTime())||0)*100)/100]); if(P==='day') d.setDate(d.getDate()+1); else if(P==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);}
+         return out;});
+      opacity: 1
+    grid_options:
+      columns: 24
+    update_interval: 5min
+- type: grid
+  column_span: 4
+  cards:
+  - type: heading
+    heading: Power
+    heading_style: subtitle
+    icon: mdi:flash
+  - type: custom:apexcharts-card
+    graph_span: 24h
+    update_interval: 30s
+    header:
+      show: true
+      title: Machine power · last 24 h
+      show_states: true
+      colorize_states: true
+    series:
+    - entity: sensor.coffee_machine_power
+      name: Power
+      type: column
+      stroke_width: 2
+      color: '#c8956b'
+      extend_to: now
+      opacity: 1
+      group_by:
+        func: max
+        duration: 5min
+      show:
+        in_header: true
+        header_color_threshold: false
+    yaxis:
+    - min: 0
+      max: '|+10%|'
+      decimals: 0
+      apex_config:
+        tickAmount: 4
+        title:
+          text: W
+    apex_config:
+      chart:
+        height: 280
+        toolbar:
+          show: false
+        zoom:
+          enabled: false
+        fontFamily: Roboto, Noto, sans-serif
+      grid:
+        borderColor: rgba(127,127,127,0.14)
+        strokeDashArray: 4
+        xaxis:
+          lines:
+            show: false
+        padding:
+          left: 6
+          right: 10
+      xaxis:
+        axisBorder:
+          show: false
+        axisTicks:
+          show: false
+        labels:
+          datetimeUTC: false
+          format: HH:mm
+          hideOverlappingLabels: true
+          style:
+            fontSize: 11px
+      tooltip:
+        theme: dark
+        x:
+          format: dd/MM HH:mm
+        y:
+          formatter: EVAL:function(v){return (v===null||v===undefined||isNaN(v))?'no data (plug off)':Math.round(v)+' W'}
+      annotations:
+        yaxis:
+        - y: 800
+          borderColor: '#f0c987'
+          strokeDashArray: 4
+          label:
+            text: counts as a drink above 600 W
+            style:
+              color: '#3e2723'
+              background: '#f0c987'
+              fontSize: 10px
+            position: left
+            textAnchor: start
+            offsetX: 6
+            borderColor: '#f0c987'
+      fill:
+        type: solid
+        opacity: 1
+      plotOptions:
+        bar:
+          columnWidth: 85%
+          borderRadius: 2
+          borderRadiusApplication: end
+      stroke:
+        width: 0
+    grid_options:
+      columns: full
+- type: grid
+  column_span: 4
+  cards:
+  - type: heading
+    heading: Tanks
+    heading_style: subtitle
+    icon: mdi:coffee-maker-check-outline
+  - type: custom:jarvis-popup-card
+    grid_options:
+      columns: 24
+    card:
+      type: custom:button-card
+      entity: counter.cafe_deposito_capsulas
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: none
+      variables:
+        lim: input_number.cafe_limite_deposito_capsulas
+        av: input_boolean.cafe_aviso_deposito_capsulas
+        title: Used capsule bin
+        icon: mdi:delete-empty-outline
+        cor: '#b07a52'
+        acao: Empty it
+        agora: Time to empty the bin
+      triggers_update:
+      - input_number.cafe_limite_deposito_capsulas
+      - input_boolean.cafe_aviso_deposito_capsulas
+      styles:
+        card:
+        - padding: 16px
+        - border-radius: 16px
+        - height: 236px
+        - box-sizing: border-box
+        - overflow: hidden
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+          av:
+          - position: absolute
+          - left: 16px
+          - bottom: 16px
+          - width: auto
+          rs:
+          - position: absolute
+          - right: 16px
+          - bottom: 16px
+          - width: auto
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)';
+          const n=parseInt(entity?.state)||0, lim=parseInt(states[P.lim]?.state)||8, av=states[P.av]?.state==='on';
+          const falta=Math.max(0,lim-n), pct=Math.min(100,n/lim*100);
+          const col=falta<=1?'#fb8c00':P.cor;
+          return `<div style="display:flex;flex-direction:column;gap:10px;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:56px;font-weight:300;line-height:1;color:${col}">${n}</span><span style="font-size:20px;color:${muted}">/ ${lim}</span><span style="font-size:14px;color:${muted}">drinks</span></div>
+          <div style="height:8px;border-radius:4px;background:rgba(127,127,127,.18);overflow:hidden"><div style="height:100%;width:${pct}%;background:${col}"></div></div>
+          <div style="font-size:14px">${falta===0?P.agora:`${P.acao} in <b>${falta} ${falta===1?'drink':'drinks'}</b>`}</div>
+          <div style="font-size:12px;color:${muted}"><ha-icon icon="${av?'mdi:bell-ring-outline':'mdi:bell-off-outline'}" style="margin:0;--mdc-icon-size:14px"></ha-icon> ${av?'Phone alert on · the counter resets by itself':'Alert off · the counter resets by itself'}</div>
+          </div>`; ]]]
+        av:
+          card:
+            type: custom:button-card
+            entity: input_boolean.cafe_aviso_deposito_capsulas
+            name: Alert
+            icon: mdi:bell-outline
+            show_state: false
+            layout: icon_name
+            tap_action:
+              action: toggle
+            state:
+            - value: 'on'
+              name: Alert on
+              icon: mdi:bell-ring-outline
+              styles:
+                card:
+                - background: '#43a047'
+                name:
+                - color: '#fff'
+                icon:
+                - color: '#fff'
+            - value: 'off'
+              name: Alert off
+              icon: mdi:bell-off-outline
+            styles:
+              card:
+              - background: var(--secondary-background-color, rgba(127,127,127,.15))
+              - border-radius: 20px
+              - padding: 7px 14px
+              - box-shadow: none
+              - border: none
+              grid:
+              - grid-template-areas: '"i n"'
+              - grid-template-columns: 20px auto
+              - column-gap: 6px
+              icon:
+              - width: 18px
+              name:
+              - font-size: 14px
+              - font-weight: '500'
+              - justify-self: start
+        rs:
+          card:
+            type: custom:button-card
+            entity: counter.cafe_deposito_capsulas
+            name: Reset to 0
+            icon: mdi:restore
+            show_state: false
+            layout: icon_name
+            tap_action:
+              action: perform-action
+              perform_action: counter.reset
+              target:
+                entity_id: counter.cafe_deposito_capsulas
+              confirmation:
+                text: Reset this counter to 0?
+            styles:
+              card:
+              - background: var(--secondary-background-color, rgba(127,127,127,.15))
+              - border-radius: 20px
+              - padding: 7px 14px
+              - box-shadow: none
+              - border: none
+              grid:
+              - grid-template-areas: '"i n"'
+              - grid-template-columns: 20px auto
+              - column-gap: 6px
+              icon:
+              - width: 18px
+              name:
+              - font-size: 14px
+              - font-weight: '500'
+              - justify-self: start
+      grid_options:
+        columns: 24
+    buttons:
+    - icon: mdi:tune-variant
+      label: Limits
+      title: Limits and reset
+      popup:
+        title: Limits and reset
+        rows:
+        - entity: input_number.cafe_limite_deposito_capsulas
+          name: Empty capsules every
+          icon: mdi:delete-variant
+        - entity: input_number.cafe_limite_agua
+          name: Refill water every
+          icon: mdi:water
+        - type: divider
+        - type: actions
+          actions:
+          - name: Reset all
+            icon: mdi:restore
+            warn: true
+            perform_action: counter.reset
+            target:
+              entity_id:
+              - counter.cafe_deposito_capsulas
+              - counter.cafe_deposito_agua
+            confirm: Reset both counters to 0?
+            done: Counters reset
+  - type: custom:jarvis-popup-card
+    grid_options:
+      columns: 24
+    card:
+      type: custom:button-card
+      entity: counter.cafe_deposito_agua
+      show_name: false
+      show_icon: false
+      show_state: false
+      tap_action:
+        action: none
+      variables:
+        lim: input_number.cafe_limite_agua
+        av: input_boolean.cafe_aviso_agua
+        title: Water tank
+        icon: mdi:water-outline
+        cor: '#42a5f5'
+        acao: Refill it
+        agora: Time to refill the water
+      triggers_update:
+      - input_number.cafe_limite_agua
+      - input_boolean.cafe_aviso_agua
+      styles:
+        card:
+        - padding: 16px
+        - border-radius: 16px
+        - height: 236px
+        - box-sizing: border-box
+        - overflow: hidden
+        grid:
+        - grid-template-areas: '"x"'
+        - grid-template-columns: 1fr
+        - grid-template-rows: 1fr
+        - align-content: stretch
+        - height: 100%
+        custom_fields:
+          x:
+          - width: 100%
+          - text-align: left
+          - height: 100%
+          av:
+          - position: absolute
+          - left: 16px
+          - bottom: 16px
+          - width: auto
+          rs:
+          - position: absolute
+          - right: 16px
+          - bottom: 16px
+          - width: auto
+      custom_fields:
+        x: |
+          [[[ const P=variables; const muted='var(--secondary-text-color)';
+          const n=parseInt(entity?.state)||0, lim=parseInt(states[P.lim]?.state)||8, av=states[P.av]?.state==='on';
+          const falta=Math.max(0,lim-n), pct=Math.min(100,n/lim*100);
+          const col=falta<=1?'#fb8c00':P.cor;
+          return `<div style="display:flex;flex-direction:column;gap:10px;height:100%">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${muted}"><ha-icon icon="${P.icon}" style="margin:0;--mdc-icon-size:18px"></ha-icon>${P.title}</div>
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:56px;font-weight:300;line-height:1;color:${col}">${n}</span><span style="font-size:20px;color:${muted}">/ ${lim}</span><span style="font-size:14px;color:${muted}">drinks</span></div>
+          <div style="height:8px;border-radius:4px;background:rgba(127,127,127,.18);overflow:hidden"><div style="height:100%;width:${pct}%;background:${col}"></div></div>
+          <div style="font-size:14px">${falta===0?P.agora:`${P.acao} in <b>${falta} ${falta===1?'drink':'drinks'}</b>`}</div>
+          <div style="font-size:12px;color:${muted}"><ha-icon icon="${av?'mdi:bell-ring-outline':'mdi:bell-off-outline'}" style="margin:0;--mdc-icon-size:14px"></ha-icon> ${av?'Phone alert on · the counter resets by itself':'Alert off · the counter resets by itself'}</div>
+          </div>`; ]]]
+        av:
+          card:
+            type: custom:button-card
+            entity: input_boolean.cafe_aviso_agua
+            name: Alert
+            icon: mdi:bell-outline
+            show_state: false
+            layout: icon_name
+            tap_action:
+              action: toggle
+            state:
+            - value: 'on'
+              name: Alert on
+              icon: mdi:bell-ring-outline
+              styles:
+                card:
+                - background: '#43a047'
+                name:
+                - color: '#fff'
+                icon:
+                - color: '#fff'
+            - value: 'off'
+              name: Alert off
+              icon: mdi:bell-off-outline
+            styles:
+              card:
+              - background: var(--secondary-background-color, rgba(127,127,127,.15))
+              - border-radius: 20px
+              - padding: 7px 14px
+              - box-shadow: none
+              - border: none
+              grid:
+              - grid-template-areas: '"i n"'
+              - grid-template-columns: 20px auto
+              - column-gap: 6px
+              icon:
+              - width: 18px
+              name:
+              - font-size: 14px
+              - font-weight: '500'
+              - justify-self: start
+        rs:
+          card:
+            type: custom:button-card
+            entity: counter.cafe_deposito_agua
+            name: Reset to 0
+            icon: mdi:restore
+            show_state: false
+            layout: icon_name
+            tap_action:
+              action: perform-action
+              perform_action: counter.reset
+              target:
+                entity_id: counter.cafe_deposito_agua
+              confirmation:
+                text: Reset this counter to 0?
+            styles:
+              card:
+              - background: var(--secondary-background-color, rgba(127,127,127,.15))
+              - border-radius: 20px
+              - padding: 7px 14px
+              - box-shadow: none
+              - border: none
+              grid:
+              - grid-template-areas: '"i n"'
+              - grid-template-columns: 20px auto
+              - column-gap: 6px
+              icon:
+              - width: 18px
+              name:
+              - font-size: 14px
+              - font-weight: '500'
+              - justify-self: start
+      grid_options:
+        columns: 24
+    buttons:
+    - icon: mdi:tune-variant
+      label: Limits
+      title: Limits and reset
+      popup:
+        title: Limits and reset
+        rows:
+        - entity: input_number.cafe_limite_deposito_capsulas
+          name: Empty capsules every
+          icon: mdi:delete-variant
+        - entity: input_number.cafe_limite_agua
+          name: Refill water every
+          icon: mdi:water
+        - type: divider
+        - type: actions
+          actions:
+          - name: Reset all
+            icon: mdi:restore
+            warn: true
+            perform_action: counter.reset
+            target:
+              entity_id:
+              - counter.cafe_deposito_capsulas
+              - counter.cafe_deposito_agua
+            confirm: Reset both counters to 0?
+            done: Counters reset
+theme: JARVIS
