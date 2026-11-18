@@ -608,6 +608,8 @@ automation:
       A tomada mede a bebida inteira (do início até 20 s em repouso); aqui só se classifica: pouco tempo a trabalhar = ligar a máquina,
       longo e com muita energia = cappuccino, longo com pouca energia = lungo, o resto = café.
       Substitui a regra antiga baseada nas leituras da tomada no HA (17-11-2026).
+      Arranque a frio (máquina parada >= cafe_arranque_min): só conta se se vir a bomba, isto é, a potência subir
+      >= 40 W acima do patamar inicial durante >= 3 s; se ficar plana ou descer é só aquecimento (18-11-2026).
     mode: queued
     max: 20
     triggers:
@@ -652,8 +654,18 @@ automation:
           wh: "{{ d.wh | default(0) | float(0) }}"
           pmax: "{{ d.pmax | default(0) | int(0) }}"
           ts: "{{ ((d.ts | int(0)) | as_datetime | as_local).isoformat() if d.ts | default(0) | int(0) > 0 else now().isoformat() }}"
+          frio: "{{ (d.idle | default(0) | int(0)) >= (states('input_number.cafe_arranque_min') | float(30)) * 60 }}"
+          bomba: >-
+            {% set tr = (d.tr | default([], true)) | list if d.tr is not string else [] %}
+            {% set ns = namespace(i=-1, n=0) %}
+            {% for v in tr %}{% if ns.i < 0 and (v | int(0)) >= 100 %}{% set ns.i = loop.index0 %}{% endif %}{% endfor %}
+            {% if ns.i < 0 or tr | count < 5 %}sem_dados{% else %}
+            {% set base = tr[ns.i:ns.i + 2] | map('int') | max %}
+            {% for v in tr[ns.i + 2:] %}{% if (v | int(0)) >= base + 4 %}{% set ns.n = ns.n + 1 %}{% endif %}{% endfor %}
+            {{- 'sim' if ns.n >= 3 else 'nao' -}}{% endif %}
           tipo: >-
             {% if act < states('input_number.cafe_limite_aquecimento_s') | float(15) %}aquecimento
+            {%- elif frio and bomba == 'nao' %}aquecimento
             {%- elif dur >= states('input_number.cafe_limite_cappuccino_s') | float(35)
                   and wh >= states('input_number.cafe_limite_cappuccino_wh') | float(13) %}cappuccino
             {%- elif dur >= states('input_number.cafe_limite_lungo_total_s') | float(70) %}lungo
@@ -668,6 +680,7 @@ automation:
           pmax: "{{ pmax }}"
           idle: "{{ d.idle | default(0) }}"
           act: "{{ act }}"
+          bomba: "{{ bomba }}"
           tr: "{{ d.tr | default('') }}"
           seq: "{{ d.seq | default(0) }}"
       - condition: template
