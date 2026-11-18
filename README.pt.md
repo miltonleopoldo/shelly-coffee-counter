@@ -6,7 +6,7 @@ Conta cada café que a máquina tira, distingue café, lungo e cappuccino, e con
 
 A deteção corre **na própria tomada** (uma Shelly Plug M Gen3 com um script mJS que lê a potência a cada segundo). O Home Assistant só recebe uma bebida já fechada, por webhook, classifica-a e trata das contas.
 
-![Dashboard](images/01-jarvis-topo.png)
+![Dashboard](images/01-dashboard-topo.png)
 
 ## Porquê na tomada?
 
