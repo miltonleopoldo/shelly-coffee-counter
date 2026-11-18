@@ -6,7 +6,7 @@ Count every coffee your machine makes, tell an espresso from a lungo and a cappu
 
 The detection runs **on the plug** (a Shelly Plug M Gen3 running an mJS script, sampling power every second). Home Assistant only receives a finished "drink" over a webhook, classifies it and does the bookkeeping.
 
-![Dashboard](images/01-jarvis-topo.png)
+![Dashboard](images/en/01-dashboard-top.png)
 
 ## Why on the plug?
 
@@ -19,13 +19,15 @@ The first version did everything in Home Assistant, from the readings of a Shell
 
 A Tuya cloud plug was even worse (one reading every ~35 s; it missed a whole lungo). Moving the detection onto the plug, at 1 s resolution, solved all of it.
 
-![Drink signatures](images/02-assinatura-das-bebidas.png)
+![Drink signatures](images/en/02-assinatura-das-bebidas.png)
 
-![Readings per minute](images/07-leituras-por-minuto.png)
+![Readings per minute](images/en/07-leituras-por-minuto.png)
 
 ## How it works
 
-![Architecture](images/08-arquitetura.png)
+![Architecture](images/en/08-arquitetura.png)
+
+![The saga](images/en/06-a-saga.png)
 
 **On the plug** (`shelly/contador_cafe.js`):
 
@@ -53,7 +55,7 @@ A Tuya cloud plug was even worse (one reading every ~35 s; it missed a whole lun
 | `dashboard/coffee-view.yaml` | The "Coffee" dashboard view in English (sections layout) |
 | `dashboard/vista-cafe.yaml` | The same view in Portuguese |
 | `docs/` | Installation guide in English and Portuguese (Markdown and Word) |
-| `images/` | Screenshots and diagrams |
+| `images/` | Screenshots and diagrams (`images/en/` for the English versions) |
 
 ## Installation
 
@@ -85,9 +87,9 @@ Other machines will have different power signatures. Look at the `tr` trace in `
 
 ## Screenshots
 
-| Capsules | History | Power and tanks |
-|---|---|---|
-| ![](images/03-capsulas-stock.png) | ![](images/04-evolucao.png) | ![](images/05-potencia-depositos.png) |
+![History](images/en/04-history.png)
+
+![Shelly script editor](images/09-shelly-script.png)
 
 ## License
 
