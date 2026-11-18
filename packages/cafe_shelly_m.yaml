@@ -1,0 +1,20 @@
+# packages/cafe_shelly_m.yaml - lista das últimas 15 extrações medidas pelo script da Shelly Plug M Gen3
+# (preenchida pela automação cafe_registar_bebida em packages/cafe.yaml, com o tipo atribuído e os valores medidos).
+# Serve para conferir a classificação; os contadores oficiais estão em cafe.yaml.
+
+template:
+  - triggers:
+      - trigger: event
+        event_type: cafe_m_bloco
+    sensor:
+      - name: Café - extrações medidas pela tomada
+        unique_id: cafe_m_ultimos_blocos
+        icon: mdi:format-list-bulleted
+        state: "{{ 'sem dados' if trigger.event.data.reset is defined else trigger.event.data.tipo }}"
+        attributes:
+          lista: >-
+            {% set novo = [{'q': trigger.event.data.q, 't': trigger.event.data.tipo, 'dur': trigger.event.data.dur,
+               'hi': trigger.event.data.hi, 'wh': trigger.event.data.wh, 'pmax': trigger.event.data.pmax,
+               'idle': trigger.event.data.idle, 'act': trigger.event.data.act, 'tr': trigger.event.data.tr,
+               'seq': trigger.event.data.seq}] %}
+            {{ [] if trigger.event.data.reset is defined else (novo + (this.attributes.lista | default([])))[:15] }}

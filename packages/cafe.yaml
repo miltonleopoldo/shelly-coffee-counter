@@ -1,0 +1,725 @@
+# packages/cafe.yaml - contagem de cafés pela tomada Shelly da máquina (sensor.coffee_machine_power)
+# DESDE 17-11-2026: as bebidas são medidas pelo script contador_cafe na Shelly Plug M Gen3 (<IP_DA_TOMADA>), que envia cada
+#   extração para o webhook da automação cafe_registar_bebida (lê a potência a cada segundo e guarda/reenvia as extrações
+#   se o Wi-Fi falhar). A regra descrita abaixo era a da tomada antiga (Plug S) e fica como referência dos limites.
+# Regra (recalibrada a 12-11-2026 17:35 com leituras de 6 s): uma bebida é um bloco de potência alta
+#   (começa acima de 600 W, acaba abaixo de 400 W; blocos a menos de 15 s juntam-se).
+# Tipo: cappuccino se o bloco dura >= limite (s) E gasta >= limite (Wh); senão café.
+#   (12-11: ligar a máquina + café logo a seguir juntam-se num bloco de ~38 s mas só ~9,5 Wh; cappuccino ~16-22 Wh.)
+#   (Expresso e lungo dão o mesmo bloco de ~12 s na tomada; por agora ficam ambos como "café".)
+# Arranque: o primeiro bloco curto depois de a máquina estar parada (< 40 W) há X minutos é o aquecimento ao ligar e é ignorado.
+# Com input_boolean.cafe_manutencao ligado nada é contado (desliga-se sozinho ao fim de 2 horas).
+# Stock de cápsulas: input_number.cafe_stock_capsulas; cada bebida contada desconta 1 (script.cafe_stock_movimento);
+#   compras/retiradas/acertos manuais ficam em /config/registo_capsulas.csv. Aviso no telemóvel 1x/dia com stock <= mínimo.
+# Depósitos: counter.cafe_deposito_capsulas / cafe_deposito_agua contam bebidas; ao chegar a input_number.cafe_limite_* avisa
+#   (input_boolean.cafe_aviso_*) e põe a zero.
+# Cada bebida fica escrita em /config/registo_cafes.csv (notify.registo_cafes) e nos contadores (estatísticas para sempre).
+
+counter:
+  cafe_deposito_capsulas:
+    name: Café - bebidas desde a limpeza do depósito de cápsulas
+    icon: mdi:delete-empty-outline
+    step: 1
+  cafe_deposito_agua:
+    name: Café - bebidas desde o enchimento da água
+    icon: mdi:water-outline
+    step: 1
+  cafe_bebidas:
+    name: Café - bebidas (total)
+    icon: mdi:coffee
+    step: 1
+  cafe_cafes:
+    name: Café - cafés (total)
+    icon: mdi:coffee-outline
+    step: 1
+  cafe_cappuccinos:
+    name: Café - cappuccinos (total)
+    icon: mdi:cup
+    step: 1
+  cafe_expressos:
+    name: Café - expressos (total)
+    icon: mdi:coffee
+    step: 1
+  cafe_lungos:
+    name: Café - lungos (total)
+    icon: mdi:coffee-outline
+    step: 1
+
+input_number:
+  cafe_limite_aquecimento_s:
+    name: Café - menos segundos a trabalhar do que isto é só ligar a máquina (s)
+    min: 1
+    max: 60
+    step: 1
+    initial: 15
+    mode: box
+    unit_of_measurement: s
+  cafe_limite_lungo_total_s:
+    name: Café - duração total da bebida a partir da qual é Lungo (s)
+    min: 20
+    max: 300
+    step: 1
+    initial: 70
+    mode: box
+    unit_of_measurement: s
+  cafe_tomada_ultimo_seq:
+    name: Café - última extração recebida da tomada (sequência)
+    min: 0
+    max: 1000000
+    step: 1
+    mode: box
+  cafe_limite_deposito_capsulas:
+    name: Esvaziar cápsulas a cada
+    icon: mdi:delete-empty-outline
+    min: 1
+    max: 50
+    step: 1
+    mode: box
+    unit_of_measurement: bebidas
+  cafe_limite_agua:
+    name: Encher a água a cada
+    icon: mdi:water-outline
+    min: 1
+    max: 50
+    step: 1
+    mode: box
+    unit_of_measurement: bebidas
+  cafe_stock_capsulas:
+    name: Café - stock de cápsulas
+    icon: mdi:package-variant
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: cápsulas
+  cafe_stock_quantidade:
+    name: Quantidade
+    icon: mdi:numeric
+    min: 0
+    max: 1000
+    step: 1
+    mode: box
+    unit_of_measurement: cápsulas
+  cafe_stock_minimo:
+    name: Avisar quando o stock chegar a
+    icon: mdi:alert-outline
+    min: 0
+    max: 500
+    step: 1
+    mode: box
+    unit_of_measurement: cápsulas
+  cafe_limite_lungo_s:
+    name: Café - limite lungo (s acima de 800 W)
+    icon: mdi:timer-outline
+    min: 5
+    max: 120
+    step: 1
+    mode: box
+    unit_of_measurement: s
+  cafe_arranque_min:
+    name: Café - parada há mais de (min) = aquecimento ao ligar
+    icon: mdi:power
+    min: 0
+    max: 120
+    step: 1
+    mode: box
+    unit_of_measurement: min
+  cafe_limite_cappuccino_wh:
+    name: Café - energia mínima de um cappuccino (Wh)
+    icon: mdi:lightning-bolt
+    min: 1
+    max: 100
+    step: 0.5
+    mode: box
+    unit_of_measurement: Wh
+  cafe_limite_cappuccino_s:
+    name: Café - limite cappuccino (duração total s)
+    icon: mdi:timer-outline
+    min: 20
+    max: 300
+    step: 1
+    mode: box
+    unit_of_measurement: s
+  cafe_energia_total:
+    name: Café - energia das bebidas (total)
+    icon: mdi:lightning-bolt
+    min: 0
+    max: 10000000
+    step: 0.01
+    mode: box
+    unit_of_measurement: Wh
+
+input_boolean:
+  cafe_aviso_deposito_capsulas:
+    name: Café - aviso do depósito de cápsulas
+    icon: mdi:bell-outline
+  cafe_aviso_agua:
+    name: Café - aviso da água
+    icon: mdi:bell-outline
+  cafe_manutencao:
+    name: Café - modo manutenção
+    icon: mdi:wrench
+  cafe_avisos_stock:
+    name: Café - avisos de compra de café
+    icon: mdi:bell-ring-outline
+
+input_datetime:
+  cafe_stock_ultimo_aviso:
+    name: Café - último aviso de stock
+    icon: mdi:bell-check-outline
+    has_date: true
+    has_time: false
+  cafe_maquina_parada_desde:
+    name: Café - máquina parada desde
+    icon: mdi:clock-outline
+    has_date: true
+    has_time: true
+
+input_text:
+  cafe_ultima:
+    name: Café - última bebida
+    icon: mdi:coffee
+    max: 120
+
+sensor:
+  - platform: integration
+    source: sensor.coffee_machine_power
+    name: Café energia acumulada
+    unique_id: cafe_energia_acumulada
+    method: left
+    round: 3
+    unit_time: h
+    max_sub_interval:
+      seconds: 30
+  - platform: statistics
+    name: Café bebidas 7 dias
+    unique_id: cafe_bebidas_7_dias
+    entity_id: sensor.cafes_total
+    state_characteristic: change
+    max_age:
+      days: 7
+    sampling_size: 5000
+  - platform: statistics
+    name: Café potência máxima recente
+    unique_id: cafe_potencia_max_recente
+    entity_id: sensor.coffee_machine_power
+    state_characteristic: value_max
+    max_age:
+      minutes: 3
+    sampling_size: 200
+
+template:
+  - triggers:
+      - trigger: event
+        event_type: cafe_stock_mov
+    sensor:
+      - name: Café movimentos de stock
+        unique_id: cafe_stock_movimentos
+        icon: mdi:swap-vertical
+        state: "{{ trigger.event.data.quando }}"
+        attributes:
+          lista: >
+            {% set novo = {'q': trigger.event.data.quando, 't': trigger.event.data.tipo, 'n': trigger.event.data.qtd | int(0), 's': trigger.event.data.stock | int(0)} %}
+            {{ ([novo] + (this.attributes.lista | default([], true) | list))[:30] }}
+  - sensor:
+      - name: Café stock
+        unique_id: cafe_stock
+        icon: mdi:package-variant
+        unit_of_measurement: cápsulas
+        state_class: measurement
+        state: "{{ states('input_number.cafe_stock_capsulas') | int(0) }}"
+      - name: Café stock dias
+        unique_id: cafe_stock_dias
+        icon: mdi:calendar-clock
+        unit_of_measurement: d
+        state: >
+          {% set desde = state_attr('sensor.cafes_por_hora_do_dia', 'desde') %}
+          {% set dias = [1, [7, ((now().date() - (as_datetime(desde).date() if desde else now().date())).days + 1)] | min] | max %}
+          {% set media = (states('sensor.cafe_bebidas_7_dias') | float(0)) / dias %}
+          {{ ((states('input_number.cafe_stock_capsulas') | float(0)) / media) | round(0) if media > 0 else 'unknown' }}
+        attributes:
+          media_dia: >
+            {% set desde = state_attr('sensor.cafes_por_hora_do_dia', 'desde') %}
+            {% set dias = [1, [7, ((now().date() - (as_datetime(desde).date() if desde else now().date())).days + 1)] | min] | max %}
+            {{ ((states('sensor.cafe_bebidas_7_dias') | float(0)) / dias) | round(1) }}
+  - triggers:
+      - trigger: event
+        event_type: cafe_bebida
+      - trigger: event
+        event_type: cafe_ultimas_seed
+    sensor:
+      - name: Café últimas bebidas
+        unique_id: cafe_ultimas_bebidas
+        icon: mdi:format-list-bulleted
+        state: >
+          {% if trigger.event.event_type == 'cafe_ultimas_seed' %}
+            {{ (trigger.event.data.lista | first).q if trigger.event.data.lista else 'unknown' }}
+          {% else %}{{ trigger.event.data.quando }}{% endif %}
+        attributes:
+          lista: >
+            {% if trigger.event.event_type == 'cafe_ultimas_seed' %}
+              {{ trigger.event.data.lista }}
+            {% else %}
+              {% set novo = {'q': trigger.event.data.quando, 't': trigger.event.data.tipo, 'wh': trigger.event.data.wh | float(0), 'd': trigger.event.data.dur | int(0)} %}
+              {{ ([novo] + (this.attributes.lista | default([], true) | list))[:30] }}
+            {% endif %}
+  - triggers:
+      - trigger: event
+        event_type: cafe_bebida
+    sensor:
+      - name: Cafés por hora do dia
+        unique_id: cafe_por_hora
+        icon: mdi:clock-outline
+        unit_of_measurement: bebidas
+        state: "{{ (this.state | int(0)) + 1 }}"
+        attributes:
+          cafe: >-
+            {% set a = this.attributes.get('cafe', none) or [0]*24 %}
+            {% set hh = trigger.event.data.hora | int(0) %}
+            {% set add = 0 if trigger.event.data.tipo == 'cappuccino' else 1 %}
+            {% set ns = namespace(l=[]) %}
+            {% for i in range(24) %}{% set ns.l = ns.l + [(a[i] | int(0)) + (add if i == hh else 0)] %}{% endfor %}
+            {{ ns.l }}
+          cappuccino: >-
+            {% set a = this.attributes.get('cappuccino', none) or [0]*24 %}
+            {% set hh = trigger.event.data.hora | int(0) %}
+            {% set add = 1 if trigger.event.data.tipo == 'cappuccino' else 0 %}
+            {% set ns = namespace(l=[]) %}
+            {% for i in range(24) %}{% set ns.l = ns.l + [(a[i] | int(0)) + (add if i == hh else 0)] %}{% endfor %}
+            {{ ns.l }}
+          expresso: >-
+            {% set a = this.attributes.get('expresso', none) or [0]*24 %}
+            {% set hh = trigger.event.data.hora | int(0) %}
+            {% set add = 1 if trigger.event.data.tipo == 'expresso' else 0 %}
+            {% set ns = namespace(l=[]) %}
+            {% for i in range(24) %}{% set ns.l = ns.l + [(a[i] | int(0)) + (add if i == hh else 0)] %}{% endfor %}
+            {{ ns.l }}
+          lungo: >-
+            {% set a = this.attributes.get('lungo', none) or [0]*24 %}
+            {% set hh = trigger.event.data.hora | int(0) %}
+            {% set add = 1 if trigger.event.data.tipo == 'lungo' else 0 %}
+            {% set ns = namespace(l=[]) %}
+            {% for i in range(24) %}{% set ns.l = ns.l + [(a[i] | int(0)) + (add if i == hh else 0)] %}{% endfor %}
+            {{ ns.l }}
+          desde: "{{ this.attributes.get('desde') or now().strftime('%Y-%m-%d') }}"
+  - binary_sensor:
+      - name: Café a extrair
+        unique_id: cafe_a_extrair
+        icon: mdi:coffee-maker
+        state: >
+          {% set p = states('sensor.coffee_machine_power') | float(0) %}
+          {{ p > 600 or (is_state('binary_sensor.cafe_a_extrair', 'on') and p > 400) }}
+        delay_off:
+          seconds: 15
+      - name: Café máquina em uso
+        unique_id: cafe_maquina_em_uso
+        icon: mdi:coffee-maker-outline
+        state: "{{ states('sensor.coffee_machine_power') | float(0) > 40 }}"
+        delay_off:
+          seconds: 15
+  - sensor:
+      - name: Cafés total
+        unique_id: cafe_total_bebidas
+        icon: mdi:coffee
+        unit_of_measurement: bebidas
+        state_class: total_increasing
+        state: "{{ states('counter.cafe_bebidas') | int(0) }}"
+      - name: Cafés total (café)
+        unique_id: cafe_total_cafes
+        icon: mdi:coffee-outline
+        unit_of_measurement: cafés
+        state_class: total_increasing
+        state: "{{ states('counter.cafe_cafes') | int(0) }}"
+      - name: Cafés total (cappuccino)
+        unique_id: cafe_total_cappuccinos
+        icon: mdi:cup
+        unit_of_measurement: cappuccinos
+        state_class: total_increasing
+        state: "{{ states('counter.cafe_cappuccinos') | int(0) }}"
+      - name: Cafés total (expresso)
+        unique_id: cafe_total_expressos
+        icon: mdi:coffee
+        unit_of_measurement: expressos
+        state_class: total_increasing
+        state: "{{ states('counter.cafe_expressos') | int(0) }}"
+      - name: Cafés total (lungo)
+        unique_id: cafe_total_lungos
+        icon: mdi:coffee-outline
+        unit_of_measurement: lungos
+        state_class: total_increasing
+        state: "{{ states('counter.cafe_lungos') | int(0) }}"
+      - name: Café energia das bebidas
+        unique_id: cafe_energia_bebidas
+        icon: mdi:lightning-bolt
+        unit_of_measurement: Wh
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('input_number.cafe_energia_total') | float(0) | round(2) }}"
+
+utility_meter:
+  cafe_hoje:
+    source: sensor.cafes_total
+    name: Cafés hoje
+    unique_id: cafe_hoje
+    cycle: daily
+  cafe_semana:
+    source: sensor.cafes_total
+    name: Cafés esta semana
+    unique_id: cafe_semana
+    cycle: weekly
+  cafe_mes:
+    source: sensor.cafes_total
+    name: Cafés este mês
+    unique_id: cafe_mes
+    cycle: monthly
+  cafe_ano:
+    source: sensor.cafes_total
+    name: Cafés este ano
+    unique_id: cafe_ano
+    cycle: yearly
+  cafe_cappuccino_hoje:
+    source: sensor.cafes_total_cappuccino
+    name: Cappuccinos hoje
+    unique_id: cafe_cappuccino_hoje
+    cycle: daily
+  cafe_cappuccino_mes:
+    source: sensor.cafes_total_cappuccino
+    name: Cappuccinos este mês
+    unique_id: cafe_cappuccino_mes
+    cycle: monthly
+  cafe_so_cafe_hoje:
+    source: sensor.cafes_total_cafe
+    name: Café só café hoje
+    unique_id: cafe_so_cafe_hoje
+    cycle: daily
+  cafe_so_cafe_semana:
+    source: sensor.cafes_total_cafe
+    name: Café só café semana
+    unique_id: cafe_so_cafe_semana
+    cycle: weekly
+  cafe_so_cafe_mes:
+    source: sensor.cafes_total_cafe
+    name: Café só café mês
+    unique_id: cafe_so_cafe_mes
+    cycle: monthly
+  cafe_cappuccino_semana:
+    source: sensor.cafes_total_cappuccino
+    name: Cappuccinos esta semana
+    unique_id: cafe_cappuccino_semana
+    cycle: weekly
+  cafe_energia_hoje:
+    source: sensor.cafe_energia_das_bebidas
+    name: Café energia hoje
+    unique_id: cafe_energia_hoje
+    cycle: daily
+  cafe_expresso_hoje:
+    source: sensor.cafes_total_expresso
+    name: Expressos hoje
+    unique_id: cafe_expresso_hoje
+    cycle: daily
+  cafe_expresso_semana:
+    source: sensor.cafes_total_expresso
+    name: Expressos esta semana
+    unique_id: cafe_expresso_semana
+    cycle: weekly
+  cafe_expresso_mes:
+    source: sensor.cafes_total_expresso
+    name: Expressos este mês
+    unique_id: cafe_expresso_mes
+    cycle: monthly
+  cafe_lungo_hoje:
+    source: sensor.cafes_total_lungo
+    name: Lungos hoje
+    unique_id: cafe_lungo_hoje
+    cycle: daily
+  cafe_lungo_semana:
+    source: sensor.cafes_total_lungo
+    name: Lungos esta semana
+    unique_id: cafe_lungo_semana
+    cycle: weekly
+  cafe_lungo_mes:
+    source: sensor.cafes_total_lungo
+    name: Lungos este mês
+    unique_id: cafe_lungo_mes
+    cycle: monthly
+  cafe_energia_mes:
+    source: sensor.cafe_energia_das_bebidas
+    name: Café energia este mês
+    unique_id: cafe_energia_mes
+    cycle: monthly
+
+script:
+  cafe_stock_movimento:
+    alias: Café - movimento de stock de cápsulas
+    icon: mdi:package-variant
+    mode: queued
+    max: 10
+    fields:
+      tipo:
+        description: compra, retirada, acerto ou bebida
+        example: compra
+      qtd:
+        description: Quantidade (se omitida, usa o campo Quantidade)
+        example: 50
+    sequence:
+      - variables:
+          q: "{{ (qtd if qtd is defined else states('input_number.cafe_stock_quantidade')) | int(0) }}"
+          s: "{{ states('input_number.cafe_stock_capsulas') | int(0) }}"
+          novo: >-
+            {% if tipo == 'compra' %}{{ s + q }}
+            {%- elif tipo == 'acerto' %}{{ q }}
+            {%- else %}{{ [s - q, 0] | max }}{% endif %}
+      - condition: template
+        value_template: "{{ tipo in ['compra', 'retirada', 'acerto', 'bebida'] and (tipo == 'acerto' or q > 0) }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.cafe_stock_capsulas
+        data:
+          value: "{{ novo }}"
+      - if:
+          - condition: template
+            value_template: "{{ tipo != 'bebida' }}"
+        then:
+          - event: cafe_stock_mov
+            event_data:
+              tipo: "{{ tipo }}"
+              qtd: "{{ q }}"
+              stock: "{{ novo }}"
+              quando: "{{ now().isoformat() }}"
+          - action: notify.send_message
+            target:
+              entity_id: notify.registo_capsulas
+            data:
+              message: "{{ now().strftime('%Y-%m-%d') }};{{ now().strftime('%H:%M:%S') }};{{ tipo }};{{ q }};{{ novo }};manual"
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.cafe_stock_quantidade
+            data:
+              value: 0
+
+automation:
+  - id: cafe_maquina_parada
+    alias: Café - guardar quando a máquina parou
+    description: Guarda a hora em que a máquina deixou de consumir (< 40 W), para reconhecer o aquecimento ao ligar.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.cafe_maquina_em_uso
+        to: "off"
+    actions:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.cafe_maquina_parada_desde
+        data:
+          timestamp: "{{ as_timestamp(now()) - 15 }}"
+  - id: cafe_manutencao_desligar
+    alias: Café - desligar modo manutenção ao fim de 2 horas
+    description: Evita que o modo manutenção fique ligado por esquecimento.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.cafe_manutencao
+        to: "on"
+        for:
+          hours: 2
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.cafe_manutencao
+  - id: cafe_stock_aviso
+    alias: Café - avisar que é preciso comprar cápsulas
+    description: Uma vez por dia (no momento em que o stock chega ao mínimo e depois às 10:00) enquanto o stock estiver no mínimo ou abaixo.
+    mode: single
+    triggers:
+      - trigger: template
+        value_template: "{{ states('input_number.cafe_stock_capsulas') | int(0) <= states('input_number.cafe_stock_minimo') | int(20) }}"
+      - trigger: time
+        at: "10:00:00"
+      - trigger: state
+        entity_id: input_boolean.cafe_avisos_stock
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.cafe_avisos_stock
+        state: "on"
+      - condition: template
+        value_template: "{{ states('input_number.cafe_stock_capsulas') | int(0) <= states('input_number.cafe_stock_minimo') | int(20) }}"
+      - condition: template
+        value_template: "{{ states('input_datetime.cafe_stock_ultimo_aviso') != now().strftime('%Y-%m-%d') }}"
+    actions:
+      - action: notify.mobile_app_o_teu_telemovel
+        data:
+          title: "☕ Hora de comprar café"
+          message: >-
+            Restam {{ states('input_number.cafe_stock_capsulas') | int(0) }} cápsulas
+            {%- set d = states('sensor.cafe_stock_dias') %}{% if d not in ['unknown', 'unavailable'] %} (dá para cerca de {{ d }} dias){% endif %}.
+          data:
+            tag: cafe_stock
+            clickAction: "https://www.nespresso.com/pt/"
+            actions:
+              - action: URI
+                title: Comprar café
+                uri: "https://www.nespresso.com/pt/"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.cafe_stock_ultimo_aviso
+        data:
+          date: "{{ now().strftime('%Y-%m-%d') }}"
+  - id: cafe_depositos_aviso
+    alias: Café - avisar depósito de cápsulas / água
+    description: Ao chegar ao limite de bebidas avisa no telemóvel (se o aviso estiver ligado) e põe o contador a zero.
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: counter.cafe_deposito_capsulas
+        id: capsulas
+      - trigger: state
+        entity_id: counter.cafe_deposito_agua
+        id: agua
+    conditions:
+      - condition: template
+        value_template: >-
+          {% set lim = 'input_number.cafe_limite_deposito_capsulas' if trigger.id == 'capsulas' else 'input_number.cafe_limite_agua' %}
+          {{ trigger.to_state.state | int(0) >= states(lim) | int(8) }}
+    actions:
+      - variables:
+          n: "{{ trigger.to_state.state | int(0) }}"
+      - if:
+          - condition: template
+            value_template: >-
+              {{ is_state('input_boolean.cafe_aviso_deposito_capsulas' if trigger.id == 'capsulas' else 'input_boolean.cafe_aviso_agua', 'on') }}
+        then:
+          - action: notify.mobile_app_o_teu_telemovel
+            data:
+              title: "{{ '🗑️ Esvaziar o depósito de cápsulas' if trigger.id == 'capsulas' else '💧 Encher o depósito de água' }}"
+              message: >-
+                {{ n }} bebidas desde {{ 'a última limpeza do depósito de cápsulas' if trigger.id == 'capsulas' else 'o último enchimento da água' }}.
+              data:
+                tag: "{{ 'cafe_deposito_capsulas' if trigger.id == 'capsulas' else 'cafe_deposito_agua' }}"
+      - action: counter.reset
+        target:
+          entity_id: "{{ trigger.entity_id }}"
+  - id: cafe_registar_bebida
+    alias: Café - registar bebida (medida pela tomada Shelly Plug M Gen3)
+    description: >-
+      O script contador_cafe na tomada (<IP_DA_TOMADA>) mede cada extração a cada segundo e envia-a para este webhook,
+      com número de sequência, duração, tempo acima de 600 W, potência máxima, energia, tempo parada antes e aquecimento
+      a seguir. Repetidos são ignorados pela sequência; se faltar um número, avisa no telemóvel.
+      A tomada mede a bebida inteira (do início até 20 s em repouso); aqui só se classifica: pouco tempo a trabalhar = ligar a máquina,
+      longo e com muita energia = cappuccino, longo com pouca energia = lungo, o resto = café.
+      Substitui a regra antiga baseada nas leituras da tomada no HA (17-11-2026).
+    mode: queued
+    max: 20
+    triggers:
+      - trigger: webhook
+        webhook_id: <O_TEU_WEBHOOK_ID>
+        allowed_methods:
+          - POST
+        local_only: true
+    actions:
+      - variables:
+          d: "{{ trigger.json if trigger.json is mapping else {} }}"
+          ultimo: "{{ states('input_number.cafe_tomada_ultimo_seq') | int(0) }}"
+      - if:
+          - condition: template
+            value_template: "{{ d.teste | default(0) | int(0) == 1 }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              notification_id: cafe_tomada_teste
+              title: Café - tomada
+              message: "Teste recebido da tomada da máquina às {{ now().strftime('%H:%M:%S') }}."
+          - stop: Teste recebido
+      - condition: template
+        alias: Ignorar repetidos (reenvios da tomada)
+        value_template: "{{ d.seq | default(0) | int(0) > ultimo }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.cafe_tomada_ultimo_seq
+        data:
+          value: "{{ d.seq | int(0) }}"
+      - if:
+          - condition: template
+            value_template: "{{ ultimo > 0 and d.seq | int(0) > ultimo + 1 }}"
+        then:
+          - action: notify.mobile_app_o_teu_telemovel
+            data:
+              title: Café - extração perdida
+              message: "A tomada enviou a extração n.º {{ d.seq }} mas a última recebida foi a n.º {{ ultimo }}. Faltam {{ d.seq | int - ultimo - 1 }}; confirma a contagem."
+      - variables:
+          dur: "{{ d.dur | default(0) | int(0) }}"
+          act: "{{ d.act | default(d.dur | default(0)) | int(0) }}"
+          wh: "{{ d.wh | default(0) | float(0) }}"
+          pmax: "{{ d.pmax | default(0) | int(0) }}"
+          ts: "{{ ((d.ts | int(0)) | as_datetime | as_local).isoformat() if d.ts | default(0) | int(0) > 0 else now().isoformat() }}"
+          tipo: >-
+            {% if act < states('input_number.cafe_limite_aquecimento_s') | float(15) %}aquecimento
+            {%- elif dur >= states('input_number.cafe_limite_cappuccino_s') | float(35)
+                  and wh >= states('input_number.cafe_limite_cappuccino_wh') | float(13) %}cappuccino
+            {%- elif dur >= states('input_number.cafe_limite_lungo_total_s') | float(70) %}lungo
+            {%- else %}café{% endif %}
+      - event: cafe_m_bloco
+        event_data:
+          q: "{{ ts }}"
+          tipo: "{{ tipo }}"
+          dur: "{{ dur }}"
+          hi: "{{ d.hi | default(0) }}"
+          wh: "{{ wh }}"
+          pmax: "{{ pmax }}"
+          idle: "{{ d.idle | default(0) }}"
+          act: "{{ act }}"
+          tr: "{{ d.tr | default('') }}"
+          seq: "{{ d.seq | default(0) }}"
+      - condition: template
+        alias: Ligar a máquina sem tirar bebida (pouco tempo a trabalhar) não conta
+        value_template: "{{ tipo != 'aquecimento' }}"
+      - condition: template
+        alias: Não contar com o modo manutenção ligado
+        value_template: >-
+          {{ is_state('input_boolean.cafe_manutencao', 'off')
+             and as_timestamp(states.input_boolean.cafe_manutencao.last_changed) < as_timestamp(ts) }}
+      - if:
+          - condition: template
+            value_template: "{{ tipo == 'lungo' }}"
+        then:
+          - action: counter.increment
+            target:
+              entity_id: counter.cafe_lungos
+      - action: counter.increment
+        target:
+          entity_id: counter.cafe_bebidas
+      - action: counter.increment
+        target:
+          entity_id: >-
+            {{ 'counter.cafe_cappuccinos' if tipo == 'cappuccino' else 'counter.cafe_cafes' }}
+      - action: script.cafe_stock_movimento
+        data:
+          tipo: bebida
+          qtd: 1
+      - action: counter.increment
+        target:
+          entity_id:
+            - counter.cafe_deposito_capsulas
+            - counter.cafe_deposito_agua
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.cafe_energia_total
+        data:
+          value: "{{ ((states('input_number.cafe_energia_total') | float(0)) + wh) | round(2) }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.cafe_ultima
+        data:
+          value: "{{ tipo }} · {{ as_datetime(ts).strftime('%d/%m %H:%M') }} · {{ dur }} s · {{ wh }} Wh"
+      - event: cafe_bebida
+        event_data:
+          hora: "{{ as_datetime(ts).hour }}"
+          tipo: "{{ tipo }}"
+          quando: "{{ ts }}"
+          wh: "{{ wh }}"
+          dur: "{{ dur }}"
+      - action: notify.send_message
+        target:
+          entity_id: notify.registo_cafes
+        data:
+          message: "{{ as_datetime(ts).strftime('%Y-%m-%d') }};{{ as_datetime(ts).strftime('%H:%M:%S') }};{{ tipo }};{{ dur }};{{ wh | string | replace('.', ',') }};{{ pmax }};tomada"
