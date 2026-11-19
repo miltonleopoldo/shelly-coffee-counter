@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-19
+
+### PT
+- **Correção: a regra da bomba não estava a funcionar.** O script da tomada envia o traço ao segundo como texto (`"58,135,13,..."`) e não como lista, por isso `bomba` dava sempre `sem_dados`. Agora o texto é convertido em números.
+- **Cafés curtos com a máquina quente passam a contar.** A regra "menos de `cafe_limite_aquecimento_s` (15 s) a trabalhar = ligar a máquina" descartava cafés de 14 s tirados com a máquina já quente. Nova classificação:
+  - máquina fria e `bomba == 'nao'` → `aquecimento`;
+  - máquina fria, sem traço (`sem_dados`) e menos de 15 s → `aquecimento` (regra antiga, só como recurso);
+  - máquina quente e (`pmax` < 1000 W ou menos de 5 s acima de 600 W) → `aquecimento`;
+  - o resto é classificado como até aqui (cappuccino, lungo, café).
+
+### EN
+- **Fix: the pump rule was not working.** The plug script sends the per-second trace as text (`"58,135,13,..."`), not as a list, so `bomba` was always `sem_dados`. The text is now converted to numbers.
+- **Short coffees on a warm machine now count.** The "less than `cafe_limite_aquecimento_s` (15 s) of work = switching the machine on" rule dropped 14 s coffees made on an already warm machine. New classification:
+  - cold machine and `bomba == 'nao'` → `aquecimento`;
+  - cold machine, no trace (`sem_dados`) and under 15 s → `aquecimento` (old rule, fallback only);
+  - warm machine and (`pmax` < 1000 W or under 5 s above 600 W) → `aquecimento`;
+  - everything else is classified as before (cappuccino, lungo, coffee).
+
 ## 2026-11-18
 
 ### PT
