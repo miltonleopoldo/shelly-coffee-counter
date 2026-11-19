@@ -9,6 +9,7 @@
   - máquina fria, sem traço (`sem_dados`) e menos de 15 s → `aquecimento` (regra antiga, só como recurso);
   - máquina quente e (`pmax` < 1000 W ou menos de 5 s acima de 600 W) → `aquecimento`;
   - o resto é classificado como até aqui (cappuccino, lungo, café).
+- **Lungo vs café pela fase intermédia, não pela duração.** Nova variável `meio`: segundos entre 350 e 1000 W durante a extração (do primeiro pico até 3+ s abaixo de 350 W). Lungo se `meio` ≥ 5; a regra antiga (duração ≥ `cafe_limite_lungo_total_s`, 70 s) só se usa sem traço. Uma reposição de temperatura logo a seguir a um café esticou o bloco para 107 s e ele foi contado como lungo. O evento `cafe_m_bloco` passa a levar `meio`.
 
 ### EN
 - **Fix: the pump rule was not working.** The plug script sends the per-second trace as text (`"58,135,13,..."`), not as a list, so `bomba` was always `sem_dados`. The text is now converted to numbers.
@@ -17,6 +18,7 @@
   - cold machine, no trace (`sem_dados`) and under 15 s → `aquecimento` (old rule, fallback only);
   - warm machine and (`pmax` < 1000 W or under 5 s above 600 W) → `aquecimento`;
   - everything else is classified as before (cappuccino, lungo, coffee).
+- **Lungo vs coffee by the mid-power phase, not by duration.** New variable `meio`: seconds between 350 and 1000 W during the extraction (from the first peak until 3+ s below 350 W). Lungo when `meio` ≥ 5; the old rule (duration ≥ `cafe_limite_lungo_total_s`, 70 s) is only used without a trace. A temperature top-up right after a coffee stretched the block to 107 s and it was counted as a lungo. The `cafe_m_bloco` event now carries `meio`.
 
 ## 2026-11-18
 
