@@ -610,6 +610,7 @@ automation:
       Substitui a regra antiga baseada nas leituras da tomada no HA (17-11-2026).
       Arranque a frio (máquina parada >= cafe_arranque_min): só conta se se vir a bomba, isto é, a potência subir
       >= 40 W acima do patamar inicial durante >= 3 s; se ficar plana ou descer é só aquecimento (18-11-2026).
+      Máquina quente: conta tudo o que passar de 1000 W durante >= 5 s; a regra dos 15 s só vale a frio sem traço (19-11-2026).
     mode: queued
     max: 20
     triggers:
@@ -656,7 +657,7 @@ automation:
           ts: "{{ ((d.ts | int(0)) | as_datetime | as_local).isoformat() if d.ts | default(0) | int(0) > 0 else now().isoformat() }}"
           frio: "{{ (d.idle | default(0) | int(0)) >= (states('input_number.cafe_arranque_min') | float(30)) * 60 }}"
           bomba: >-
-            {% set tr = (d.tr | default([], true)) | list if d.tr is not string else [] %}
+            {% set tr = ((d.tr | string).split(',') if d.tr is string else (d.tr | default([], true))) | map('int', 0) | list %}
             {% set ns = namespace(i=-1, n=0) %}
             {% for v in tr %}{% if ns.i < 0 and (v | int(0)) >= 100 %}{% set ns.i = loop.index0 %}{% endif %}{% endfor %}
             {% if ns.i < 0 or tr | count < 5 %}sem_dados{% else %}
@@ -664,8 +665,9 @@ automation:
             {% for v in tr[ns.i + 2:] %}{% if (v | int(0)) >= base + 4 %}{% set ns.n = ns.n + 1 %}{% endif %}{% endfor %}
             {{- 'sim' if ns.n >= 3 else 'nao' -}}{% endif %}
           tipo: >-
-            {% if act < states('input_number.cafe_limite_aquecimento_s') | float(15) %}aquecimento
-            {%- elif frio and bomba == 'nao' %}aquecimento
+            {% if frio and bomba == 'nao' %}aquecimento
+            {%- elif frio and bomba == 'sem_dados' and act < states('input_number.cafe_limite_aquecimento_s') | float(15) %}aquecimento
+            {%- elif not frio and (pmax < 1000 or (d.hi | default(0) | int(0)) < 5) %}aquecimento
             {%- elif dur >= states('input_number.cafe_limite_cappuccino_s') | float(35)
                   and wh >= states('input_number.cafe_limite_cappuccino_wh') | float(13) %}cappuccino
             {%- elif dur >= states('input_number.cafe_limite_lungo_total_s') | float(70) %}lungo
