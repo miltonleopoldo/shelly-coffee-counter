@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-21
+
+### PT
+- **Cafés com a máquina fria contados como aquecimento.** A regra da bomba (potência >= 40 W acima do patamar inicial durante >= 3 s) falhava por uma amostra em cafés reais (2 em vez de 3 s), e dois cafés do dia foram ignorados. A máquina fria passa a contar também quando o traço tem **duas fases de aquecimento** (>= 3 s acima de 1000 W, separadas por uma descida) ou **>= 3 s entre 350 e 1000 W** depois do aquecimento (bomba). O aquecimento ao ligar continua a ser ignorado: é uma só fase plana, sem bomba.
+- Testado com os 38 blocos registados desde 17-11-2026: todos os aquecimentos continuam a ser aquecimento e só mudam os dois cafés que tinham sido perdidos.
+
+### EN
+- **Coffees on a cold machine counted as warm-up.** The pump rule (power >= 40 W above the initial level for >= 3 s) missed real coffees by one sample (2 s instead of 3), and two coffees in a day were dropped. A cold machine now also counts a drink when the trace has **two heating phases** (>= 3 s above 1000 W, separated by a dip) or **>= 3 s between 350 and 1000 W** after heating (pump). The power-on warm-up is still ignored: it is a single flat phase with no pump.
+- Tested against the 38 blocks recorded since 2026-11-17: every warm-up is still a warm-up and only the two missed coffees change.
+
 ## 2026-11-19
 
 ### PT
