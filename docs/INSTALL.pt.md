@@ -106,6 +106,8 @@ Se os dois testes passarem, a instalação está feita.
 
 Se ligaste a máquina mesmo antes do café, o aquecimento aparece em `sensor.cafe_m_ultimos_blocos` como *aquecimento* e não conta. É o comportamento esperado.
 
+**Como se separa o aquecimento de uma bebida.** Com a máquina parada há pelo menos `cafe_arranque_min` minutos (máquina fria), o bloco só conta como bebida se o registo segundo a segundo (`tr`) mostrar uma destas três coisas: a potência sobe ≥ 40 W acima do patamar inicial durante ≥ 3 s; há duas fases de aquecimento (≥ 3 s acima de 1000 W) separadas por uma descida; ou há ≥ 3 s entre 350 e 1000 W depois do aquecimento (bomba). O aquecimento ao ligar é uma só fase plana, sem nada disto. Com a máquina quente, conta tudo o que passar de 1000 W durante ≥ 5 s.
+
 ## Passo 6: instalar o dashboard
 
 Este passo é opcional: a contagem já funciona sem ele. Acrescenta o separador Café com a máquina, os totais, as últimas bebidas, o stock, os gráficos e os depósitos.
@@ -126,10 +128,11 @@ Acerta os valores em *Definições → Dispositivos e serviços → Ajudantes*, 
 
 | Helper | Valor de partida | O que faz |
 | --- | --- | --- |
-| `input_number.cafe_limite_aquecimento_s` | 15 s (já vem assim) | Menos segundos a trabalhar do que isto é só ligar a máquina e não conta |
+| `input_number.cafe_arranque_min` | 30 min | Máquina parada há pelo menos isto = máquina fria (ver acima como se separa o aquecimento) |
+| `input_number.cafe_limite_aquecimento_s` | 15 s (já vem assim) | Só se usa com a máquina fria e sem registo segundo a segundo: menos segundos do que isto é só ligar a máquina |
 | `input_number.cafe_limite_cappuccino_s` | 35 s | Duração mínima de um cappuccino |
 | `input_number.cafe_limite_cappuccino_wh` | 13 Wh | Energia mínima de um cappuccino |
-| `input_number.cafe_limite_lungo_total_s` | 70 s (já vem assim) | A partir desta duração, sem energia de cappuccino, é lungo |
+| `input_number.cafe_limite_lungo_total_s` | 70 s (já vem assim) | Só sem registo segundo a segundo: a partir desta duração, sem energia de cappuccino, é lungo. Com registo, é lungo com ≥ 5 s entre 350 e 1000 W na extração |
 | `input_number.cafe_stock_capsulas` | as cápsulas que tens | Stock atual; cada bebida desconta 1 |
 | `input_number.cafe_stock_minimo` | 20 | Abaixo disto recebes aviso no telemóvel, no máximo 1 vez por dia |
 | `input_number.cafe_limite_deposito_capsulas` | quantas cápsulas cabem no teu depósito | Aviso para esvaziar |
@@ -137,7 +140,7 @@ Acerta os valores em *Definições → Dispositivos e serviços → Ajudantes*, 
 
 Os valores do café, lungo e cappuccino servem para a Lattissima One Evo. Noutra máquina, tira de cada tipo de bebida, vê a duração e os Wh de cada uma em `sensor.cafe_m_ultimos_blocos` e ajusta os limites entre os valores que vires.
 
-Os helpers `cafe_limite_lungo_s` e `cafe_arranque_min` são da versão antiga, com a Plug S, e já não são usados. Podes ignorá-los.
+O helper `cafe_limite_lungo_s` é da versão antiga, com a Plug S, e já não é usado. Podes ignorá-lo.
 
 ## Problemas comuns
 

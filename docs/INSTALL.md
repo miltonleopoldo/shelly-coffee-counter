@@ -106,6 +106,8 @@ If both tests pass, the installation is done.
 
 If you switched the machine on just before the coffee, the warm-up shows in `sensor.cafe_m_ultimos_blocos` as *aquecimento* and is not counted. That is expected.
 
+**How a warm-up is told apart from a drink.** When the machine has been idle for at least `cafe_arranque_min` minutes (cold machine), the block only counts as a drink if the per-second trace (`tr`) shows one of three things: power rises ≥ 40 W above the initial level for ≥ 3 s; there are two heating phases (≥ 3 s above 1000 W) separated by a dip; or there are ≥ 3 s between 350 and 1000 W after heating (pump). The power-on warm-up is a single flat phase with none of these. On a warm machine, anything above 1000 W for ≥ 5 s counts.
+
 ## Step 6: install the dashboard
 
 This step is optional: counting already works without it. It adds the Coffee view with the machine, totals, latest drinks, stock, charts and tanks.
@@ -126,10 +128,11 @@ Set the values in *Settings → Devices & services → Helpers*, or in the form 
 
 | Helper | Starting value | What it does |
 | --- | --- | --- |
-| `input_number.cafe_limite_aquecimento_s` | 15 s (already set) | Less time working than this is just switching the machine on, not counted |
+| `input_number.cafe_arranque_min` | 30 min | Idle for at least this long = cold machine (see above how warm-ups are told apart) |
+| `input_number.cafe_limite_aquecimento_s` | 15 s (already set) | Only used on a cold machine with no per-second trace: less time than this is just switching the machine on |
 | `input_number.cafe_limite_cappuccino_s` | 35 s | Minimum length of a cappuccino |
 | `input_number.cafe_limite_cappuccino_wh` | 13 Wh | Minimum energy of a cappuccino |
-| `input_number.cafe_limite_lungo_total_s` | 70 s (already set) | From this length on, without cappuccino energy, it is a lungo |
+| `input_number.cafe_limite_lungo_total_s` | 70 s (already set) | Only without a per-second trace: from this length on, without cappuccino energy, it is a lungo. With a trace, it is a lungo with ≥ 5 s between 350 and 1000 W during extraction |
 | `input_number.cafe_stock_capsulas` | the capsules you have | Current stock; each drink takes 1 |
 | `input_number.cafe_stock_minimo` | 20 | Below this you get a phone alert, at most once a day |
 | `input_number.cafe_limite_deposito_capsulas` | how many capsules your tank holds | Alert to empty it |
@@ -137,7 +140,7 @@ Set the values in *Settings → Devices & services → Helpers*, or in the form 
 
 The coffee, lungo and cappuccino values fit the Lattissima One Evo. On another machine, make one of each drink, look at the duration and Wh of each in `sensor.cafe_m_ultimos_blocos`, and set the thresholds between the values you see.
 
-The `cafe_limite_lungo_s` and `cafe_arranque_min` helpers belong to the old Plug S version and are no longer used. You can ignore them.
+The `cafe_limite_lungo_s` helper belongs to the old Plug S version and is no longer used. You can ignore it.
 
 ## Troubleshooting
 
